@@ -33,8 +33,8 @@ export default function Others() {
                 <h1 className = " mb-3">Power Your Forex Trading with <span className='text-purple'>Tachys VPS</span></h1>
                 <p className="fs-5 fw-light">Enjoy lightning-fast, reliable vps hosting designed specifically for Forex traders.</p>
                 <div className = "text-center">
-                  <Link href= {pricing} type="button" className = "btn btn-purple px-4 mx-2 mb-2">Launch VPS</Link>
-                  <Link href= {market} type="button" className = "btn btn-outline-purple px-4 mx-2 mb-2">Visit Algo Market</Link>
+                  <Link href= {pricing} type="button" className="btn btn-purple px-4 mx-2 mb-2">Launch VPS</Link>
+                  <Link href= {market} type="button" className="btn btn-outline-purple px-4 mx-2 mb-2">Visit Algo Market</Link>
                 </div>
               </div>
             </div>

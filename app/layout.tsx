@@ -4,6 +4,7 @@ import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/css/bootstrap.css";
+import "./functions/bootstrap.css";
 import NavBar from "./components/NavBar";
 import BootstrapJS from "./lib/BootstrapJS";
 import Footer from "./components/Footer";
