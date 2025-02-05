@@ -1,8 +1,7 @@
 import React from 'react';
-import { useSession } from 'next-auth/react';
+import { auth } from '../functions/firebase';
 import { Crown, Infinity, Newspaper, Rocket, X } from 'lucide-react';
 import { toast } from 'react-toastify';
-import Modal from 'react-modal';
 
 interface PremiumMembershipModalProps {
   isOpen: boolean;
@@ -10,17 +9,21 @@ interface PremiumMembershipModalProps {
 }
 
 export default function PremiumMembershipModal({ isOpen, onClose }: PremiumMembershipModalProps) {
-  const { data: session } = useSession();
-
   const handlePurchase = async () => {
     try {
+      const user = auth.currentUser;
+      if (!user) {
+        toast.error('Please sign in to continue');
+        return;
+      }
+
       const response = await fetch('/api/payment/membership', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: session?.user?.id,
+          userId: user.uid,
           amount: 7,
           type: 'membership'
         }),

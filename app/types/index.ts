@@ -1,26 +1,3 @@
-import { DefaultSession } from "next-auth"
-
-declare module "next-auth" {
-  interface Session {
-    user: {
-      id: string
-      role: Role
-      email: string
-      name?: string
-      image?: string
-    } & DefaultSession["user"]
-  }
-
-  interface User {
-    id: string
-    role: Role
-    email: string
-    name?: string
-    image?: string
-    password?: string
-  }
-}
-
 export enum Ratings { One = 1, Two, Three, Four, Five }
 export enum AlgoType { EAs = "EAs", Indicators = "Indicators", Libraries = "Libraries", Utilities = "Utilities" }
 export enum Cost { Free = "Free", Premium = "Premium" }

@@ -2,55 +2,78 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from 'next/navigation';
-import { useSession } from "next-auth/react";
-import AuthModal from "./AuthModal"; 
+import { auth, db } from '../functions/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import AuthModal from "./AuthModal";
 import PremiumMembershipModal from "./PremiumMembershipModal";
-import { Role } from "../types/index";
+import { Role, User } from "../types/index";
 
 const AuthHandler = () => {
-  const { data: session, status } = useSession();
+  const [user, setUser] = useState<any>(null);
+  const [userRole, setUserRole] = useState<Role | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
-  const [isNormalUser, setIsNormalUser] = useState(false);
   const pathname = usePathname();
   const isV6Page = pathname?.startsWith('/v6');
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setUser(firebaseUser);
+      
+      if (firebaseUser) {
+        // Get user role from Firestore
+        const userRef = doc(db, "users", firebaseUser.uid);
+        const userDoc = await getDoc(userRef);
+        const userData = userDoc.data() as User;
+        
+        if (userData) {
+          setUserRole(userData.role);
+          
+          // Check if premium has expired
+          if (userData.role === Role.Premium && userData.premiumExpiration) {
+            const expirationDate = new Date(userData.premiumExpiration);
+            if (expirationDate < new Date()) {
+              setUserRole(Role.Normal);
+            }
+          }
+        }
+      } else {
+        setUserRole(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     let authTimer: NodeJS.Timeout;
     let premiumTimer: NodeJS.Timeout;
 
     const showAuthModal = () => {
-      if (!session && !isV6Page) {
+      if (!user && !isV6Page) {
         setIsAuthModalOpen(true);
-        authTimer = setTimeout(showAuthModal, 180000); // 3 minutes
+        authTimer = setTimeout(showAuthModal, 180000);
       }
     };
 
     const showPremiumModal = () => {
-      setIsPremiumModalOpen(true);
-      premiumTimer = setTimeout(() => {
-        if (isNormalUser) {
-          showPremiumModal();
-        }
-      }, 180000); // 3 minutes
+      if (userRole === Role.Normal) {
+        setIsPremiumModalOpen(true);
+        premiumTimer = setTimeout(showPremiumModal, 180000);
+      }
     };
 
-    if (status === "loading") return;
-
-    if (status === "unauthenticated") {
+    if (!user) {
       if (isV6Page) {
         setIsAuthModalOpen(true);
       } else {
-        authTimer = setTimeout(showAuthModal, 60000); // 1 minute
+        authTimer = setTimeout(showAuthModal, 60000);
       }
-      setIsNormalUser(false);
-    } else if (status === "authenticated") {
+    } else {
       setIsAuthModalOpen(false);
-      if (session.user?.role === Role.Normal) {
-        setIsNormalUser(true);
-        authTimer = setTimeout(showPremiumModal, 90000);
-      } else {
-        setIsNormalUser(false);
+      if (userRole === Role.Normal) {
+        premiumTimer = setTimeout(showPremiumModal, 60000);
       }
     }
 
@@ -58,7 +81,7 @@ const AuthHandler = () => {
       if (authTimer) clearTimeout(authTimer);
       if (premiumTimer) clearTimeout(premiumTimer);
     };
-  }, [isV6Page, session, status]);
+  }, [isV6Page, user, userRole]);
 
   const handleCloseAuthModal = () => {
     if (!isV6Page) {

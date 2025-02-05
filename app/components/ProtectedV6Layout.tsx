@@ -1,24 +1,33 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useSession } from "next-auth/react";
 import { useRouter } from 'next/navigation';
-import { Role } from '../types/index';
+import { auth, db } from '../functions/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { Role, User } from '../types/index';
 
 export default function ProtectedV6Layout({ children }: { children: React.ReactNode }) {
-  const { data: session, status } = useSession()
-  const router = useRouter()
+  const router = useRouter();
 
   useEffect(() => {
-    if (status === "authenticated") {
-      if (session?.user?.role !== Role.Admin) {
-        router.push('/') // Redirect non-admin users
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        router.push('/');
+      } else {
+        // Check if user is admin
+        const userRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userRef);
+        const userData = userDoc.data() as User;
+        
+        if (!userData || userData.role !== Role.Admin) {
+          router.push('/');
+        }
       }
-    } else if (status === "unauthenticated") {
-      router.push('/') // Redirect unauthenticated users
-    }
-  }, [session, status, router])
+    });
 
-  // Return children to allow AuthHandler to manage authentication
-  return children
+    return () => unsubscribe();
+  }, [router]);
+
+  return children;
 }

@@ -8,10 +8,6 @@ import NavBar from "./components/NavBar";
 import BootstrapJS from "./lib/BootstrapJS";
 import Footer from "./components/Footer";
 import AuthHandler from "./components/AuthHandler";
-import Providers from './components/Providers'
-import { headers } from 'next/headers'
-import { getServerSession } from 'next-auth'
-import { authOptions } from './api/auth/[...nextauth]/route'
 
 
 export const metadata: Metadata = {
@@ -41,23 +37,18 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await getServerSession(authOptions)
-  const headersList = headers()
-  
   return (
     <html lang="en">
       <head>
         <meta name="google" content="notranslate" />
         <meta httpEquiv="Content-Language" content="en" />
       </head>
-      <body
-        className="antialiased bg-gray-100"
-      >
+      <body className="antialiased bg-gray-100">
         <ToastContainer
           position="top-right"
           autoClose={3000}
@@ -71,12 +62,10 @@ export default async function RootLayout({
           theme="light"
         />
         <BootstrapJS />
-        <Providers session={session}>
-          <NavBar />
-          {children}
-          <Footer />
-          <AuthHandler />
-        </Providers>
+        <NavBar />
+        {children}
+        <Footer />
+        <AuthHandler />
       </body>
     </html>
   );

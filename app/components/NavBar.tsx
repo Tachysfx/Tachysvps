@@ -3,7 +3,7 @@
 import {
   Server,
   Store,
-  User,
+  User as UserIcon,
   HeadphonesIcon,
   CreditCard,
   Users2,
@@ -24,20 +24,37 @@ import Image from 'next/image';
 import Link from 'next/link';
 import LanguageSelector from './LanguageSelector';
 import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
-import { Role } from '../types/index';
+import { auth, db } from '../functions/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { Role, User as UserType } from '../types/index';
 
 export default function NavBar() {
-  const { data: session, status } = useSession();
+  const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    if (session?.user?.role === Role.Admin) {
-      setIsAdmin(true);
-    } else {
-      setIsAdmin(false);
-    }
-  }, [session]);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setUser(firebaseUser);
+      
+      if (firebaseUser) {
+        // Check user role from Firestore
+        const userRef = doc(db, "users", firebaseUser.uid);
+        const userDoc = await getDoc(userRef);
+        const userData = userDoc.data() as UserType;
+        
+        if (userData && userData.role === Role.Admin) {
+          setIsAdmin(true);
+        } else {
+          setIsAdmin(false);
+        }
+      } else {
+        setIsAdmin(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Common navigation items for all users
   const commonNavItems = (
@@ -66,7 +83,7 @@ export default function NavBar() {
         </Link>
         <ul className="dropdown-menu">
           <li><Link className="dropdown-item d-flex align-items-center hover:bg-purple-600 group" href="/partnership"><Users2 className="text-purple-600 me-2 group-hover:text-white" />Affiliates & Promotions</Link></li>
-          {status === "authenticated" && (
+          {user && (
             <li><Link className="dropdown-item d-flex align-items-center hover:bg-purple-600 group" href="/v6/affiliates"><LayoutDashboard className="text-purple-600 me-2 group-hover:text-white" />Dashboard</Link></li>
           )}
         </ul>
@@ -116,7 +133,7 @@ export default function NavBar() {
             <div className='d-flex'>
               <LanguageSelector />
               <Link href="/v6/account" className='text-decoration-none'>
-                <User className="text-purple-600 w-8 h-8" />
+                <UserIcon className="text-purple-600 w-8 h-8" />
               </Link>
             </div>
           </div>
@@ -136,7 +153,7 @@ export default function NavBar() {
             <div className="offcanvas-body ps-1">
               <ul className="navbar-nav justify-content-end flex-grow-1 d-md-flex gap-md-5">
                 {/* Authenticated user items */}
-                {status === "authenticated" && (
+                {user && (
                   <>
                     <li className="nav-item separate">
                       <Link className="nav-link d-flex align-items-center px-3 py-2 hover:bg-purple-600 hover:text-white group" aria-current="page" href="/v6/dashboard">

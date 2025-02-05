@@ -1,16 +1,18 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { signIn } from "next-auth/react"
-import Modal from 'react-modal'
-import Image from 'next/image'
-import { toast } from "react-toastify"
-import Swal from 'sweetalert2'
-import { LogIn, UserPlus, KeyRound, ArrowRight } from 'lucide-react'
-import { Role } from "../types"
-
-const imgGoogle = "/google.png"
-const imgGit = "/github.png"
+import { auth, db, googleAuthProvider, realtimeDb } from "../functions/firebase"
+import { sendPasswordResetEmail, UserCredential, createUserWithEmailAndPassword, signInWithPopup, signInWithEmailAndPassword } from "firebase/auth";
+import { useState, useEffect } from "react";
+import { setDoc, getDoc, doc, updateDoc } from "firebase/firestore"
+import { ref, set } from "firebase/database";
+import Modal from 'react-modal';
+import Image from 'next/image';
+import { imgGoogle, imgGit } from "../lib/links";
+import { toast } from "react-toastify";
+import Swal from 'sweetalert2';
+import { githubAuthProvider } from "../functions/firebase";
+import { Role, User } from "../types/index"
+import { LogIn, UserPlus, KeyRound, ArrowRight } from 'lucide-react';
 
 // Bind modal to your appElement for accessibility
 if (typeof window !== 'undefined') {
@@ -23,12 +25,8 @@ interface AuthModalProps {
   disableBackgroundClose?: boolean;
 }
 
-// Update getUserLocation to include proper types
-const getUserLocation = async (): Promise<{ 
-  country: string;
-  city: string;
-  lastUpdated: string;
-} | null> => {
+// Move helper functions outside of the component
+const getUserLocation = async () => {
   try {
     const response = await fetch('https://ipapi.co/json/');
     const data = await response.json();
@@ -43,12 +41,32 @@ const getUserLocation = async (): Promise<{
   }
 };
 
+const checkAndUpdateUserRole = async (userRef: any) => {
+  const userDoc = await getDoc(userRef);
+  const userData = userDoc.data() as User | undefined;
+  
+  if (!userData?.role) {
+    await updateDoc(userRef, { role: Role.Normal });
+    return Role.Normal;
+  }
+  
+  if (userData.role === Role.Premium && userData.premiumExpiration) {
+    const expirationDate = new Date(userData.premiumExpiration);
+    if (expirationDate < new Date()) {
+      await updateDoc(userRef, { role: Role.Normal });
+      return Role.Normal;
+    }
+  }
+  
+  return userData.role;
+};
+
 // Rename the component to AuthModal and export it directly
 export default function AuthModal({ isOpen, onRequestClose, disableBackgroundClose }: AuthModalProps) {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [formType, setFormType] = useState<"signUp" | "login" | "forgotEmail">("signUp")
-  const [modalIsOpen, setModalIsOpen] = useState(isOpen)
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [formType, setFormType] = useState("signUp");
+  const [modalIsOpen, setModalIsOpen] = useState(isOpen);
 
   // Add this useEffect to handle external isOpen changes
   useEffect(() => {
@@ -79,128 +97,357 @@ export default function AuthModal({ isOpen, onRequestClose, disableBackgroundClo
     }
   };
 
+  // Add this function to update active status
+  const updateActiveStatus = async (userId: string, email: string, displayName?: string | null) => {
+    const location = await getUserLocation();
+    const activeUserRef = ref(realtimeDb, `activeUsers/${userId}`);
+    await set(activeUserRef, {
+      email: email,
+      lastActive: Date.now(),
+      name: displayName || email.split('@')[0],
+      location: location
+    });
+  };
+
+  // Add cleanup function for inactive users
+  useEffect(() => {
+    const cleanup = async () => {
+      const user = auth.currentUser;
+      if (user) {
+        const activeUserRef = ref(realtimeDb, `activeUsers/${user.uid}`);
+        await set(activeUserRef, null);
+      }
+    };
+
+    window.addEventListener('beforeunload', cleanup);
+    return () => {
+      window.removeEventListener('beforeunload', cleanup);
+      cleanup();
+    };
+  }, []);
+
   const signInManual = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+    e.preventDefault();
 
     try {
       if (password.length < 6) {
-        toast.error("Password must be at least 6 characters long")
-        return
+        toast.error("Password must be at least 6 characters long");
+        return;
       }
 
-      const res = await fetch('http://localhost:8000/api/auth/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': process.env.API_KEY || ''
-        },
-        body: JSON.stringify({ 
-          email, 
-          password,
-          role: Role.Normal,
-          location: await getUserLocation()
+      const res: UserCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = res.user;
+
+      const signUpActivity = {
+        action: "Account Creation",
+        date: new Date().toISOString(),
+        details: "New account created with email"
+      };
+
+      const location = await getUserLocation();
+      const userRef = doc(db, "users", user.uid);
+      
+      await setDoc(userRef, {
+        email: user.email,
+        password: password,
+        verification: user.emailVerified,
+        createdAt: new Date().toISOString(),
+        location: location,
+        activities1: [signUpActivity],
+        role: Role.Normal // Set default role for new users
+      });
+
+      const role = await checkAndUpdateUserRole(userRef);
+
+      sessionStorage.setItem(
+        "user",
+        JSON.stringify({
+          uid: user.uid,
+          email: user.email,
+          verification: user.emailVerified,
+          role: role
         })
-      })
-
-      if (!res.ok) throw new Error('Signup failed')
-
-      await signIn('credentials', {
-        email,
-        password,
-        redirect: false
-      })
+      );
 
       await Swal.fire({
         icon: 'success',
         title: 'Welcome!',
         text: 'Your account has been created successfully.',
         confirmButtonColor: '#7A49B7'
-      })
+      });
 
-      setEmail("")
-      setPassword("")
-      onRequestClose()
-      window.location.reload()
+      setEmail("");
+      setPassword("");
+      onRequestClose();
+      window.location.reload();
+      
+      // Add user to active users in realtime database
+      await updateActiveStatus(user.uid, user.email!, user.displayName);
 
-    } catch (error) {
-      toast.error("Failed to create account. Please try again.")
-      console.error("Error during sign-up:", error)
+    } catch (err) {
+      const error = err as { code?: string };
+      if (error.code === "auth/email-already-in-use") {
+        toast.error("This email is already registered. Please try logging in instead.");
+      } else if (error.code === "auth/invalid-email") {
+        toast.error("Please enter a valid email address.");
+      } else {
+        toast.error("Failed to create account. Please try again.");
+      }
+      console.error("Error during sign-up:", error);
     }
-  }
+  };
 
   const loginManual = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+    e.preventDefault();
 
     try {
-      const result = await signIn('credentials', {
-        email,
-        password,
-        redirect: false
-      })
+      const res = await signInWithEmailAndPassword(auth, email, password);
+      const user = res.user;
 
-      if (result?.error) {
-        toast.error("Invalid credentials")
-        return
-      }
+      const userRef = doc(db, "users", user.uid);
+      const role = await checkAndUpdateUserRole(userRef);
+      const userDoc = await getDoc(userRef);
+      const currentActivities = userDoc.data()?.activities1 || [];
+
+      const loginActivity = {
+        action: "Login",
+        date: new Date().toISOString(),
+        details: "Manual login with email"
+      };
+
+      const location = await getUserLocation();
+      await updateDoc(userRef, {
+        activities1: [loginActivity, ...currentActivities].slice(0, 5),
+        location: location
+      });
+
+      sessionStorage.setItem(
+        "user",
+        JSON.stringify({
+          uid: user.uid,
+          email: user.email,
+          verification: user.emailVerified,
+          role: role
+        })
+      );
 
       await Swal.fire({
         icon: 'success',
         title: 'Welcome back!',
         text: 'You have successfully logged in.',
         confirmButtonColor: '#7A49B7'
-      })
+      });
 
-      setEmail("")
-      setPassword("")
-      onRequestClose()
-      window.location.reload()
+      setEmail("");
+      setPassword("");
+      onRequestClose();
+      window.location.reload();
 
-    } catch (error) {
-      toast.error("Failed to log in. Please try again.")
-      console.error("Error during login:", error)
+      // Add user to active users in realtime database
+      await updateActiveStatus(user.uid, user.email!, user.displayName);
+
+    } catch (err) {
+      const error = err as { code?: string };
+      if (error.code === "auth/user-not-found") {
+        toast.error("No account found with this email.");
+      } else if (error.code === "auth/wrong-password") {
+        toast.error("Incorrect password. Please try again.");
+      } else if (error.code === "auth/invalid-email") {
+        toast.error("Please enter a valid email address.");
+      } else {
+        toast.error("Failed to log in. Please try again.");
+      }
+      console.error("Error during login:", error);
     }
-  }
+  };
 
-  const handleForgotEmail = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+  const signInGitHub = async (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+    e.preventDefault();
 
     try {
-      const res = await fetch('http://localhost:8000/api/auth/reset-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': process.env.API_KEY || ''
-        },
-        body: JSON.stringify({ email })
-      })
+      const res = await signInWithPopup(auth, githubAuthProvider);
+      const user = res.user;
 
-      if (!res.ok) throw new Error('Reset password failed')
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+      const lastLogin = new Date().toISOString();
+      const location = await getUserLocation();
+
+      if (!userDoc.exists()) {
+        const signUpActivity = {
+          action: "Account Creation",
+          date: lastLogin,
+          details: "New account created with GitHub"
+        };
+
+        await setDoc(userDocRef, {
+          email: user.email,
+          name: user.displayName,
+          photoURL: user.photoURL,
+          verification: user.emailVerified,
+          createdAt: lastLogin,
+          lastLogin: lastLogin,
+          location: location,
+          activities1: [signUpActivity],
+          role: Role.Normal // Set default role for new users
+        });
+
+        await Swal.fire({
+          icon: 'success',
+          title: 'Welcome!',
+          text: 'Your account has been created successfully.',
+          confirmButtonColor: '#7A49B7'
+        });
+      }
+
+      const role = await checkAndUpdateUserRole(userDocRef);
+      const currentActivities = userDoc.exists() ? userDoc.data()?.activities1 || [] : [];
+        const loginActivity = {
+          action: "Login",
+          date: lastLogin,
+          details: "Login with GitHub"
+        };
+
+        await updateDoc(userDocRef, {
+          lastLogin: lastLogin,
+          location: location,
+          activities1: [loginActivity, ...currentActivities].slice(0, 5)
+        });
+
+      sessionStorage.setItem(
+        "user",
+        JSON.stringify({
+          uid: user.uid,
+          email: user.email,
+          verification: user.emailVerified,
+          role: role
+        })
+      );
+
+      onRequestClose();
+      window.location.reload();
+      
+      await updateActiveStatus(user.uid, user.email!, user.displayName);
+
+    } catch (err) {
+      const error = err as { code?: string };
+      if (error.code === "auth/popup-closed-by-user") {
+        toast.info("Sign-in cancelled.");
+      } else {
+        toast.error("Failed to sign in with GitHub. Please try again.");
+      }
+      console.error("Error during GitHub sign-in:", error);
+    }
+  };
+
+  const handleForgotEmail = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    try {
+      await sendPasswordResetEmail(auth, email);
       
       await Swal.fire({
         icon: 'success',
         title: 'Email Sent!',
         text: 'Please check your inbox for password reset instructions.',
         confirmButtonColor: '#7A49B7'
-      })
+      });
 
-      setEmail("")
-      onRequestClose()
-    } catch (error) {
-      toast.error("Failed to send reset email. Please try again.")
-      console.error("Error sending reset email:", error)
+      setEmail("");
+      onRequestClose();
+    } catch (err) {
+      const error = err as { code?: string };
+      if (error.code === "auth/user-not-found") {
+        toast.error("No account found with this email.");
+      } else if (error.code === "auth/invalid-email") {
+        toast.error("Please enter a valid email address.");
+      } else {
+        toast.error("Failed to send reset email. Please try again.");
+      }
+      console.error("Error sending reset email:", error);
     }
-  }
+  };
 
-  // Modify social sign-in handlers
-  const signInGoogle = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault()
-    signIn('google')
-  }
+  const signInGoogle = async (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+    e.preventDefault();
 
-  const signInGitHub = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault()
-    signIn('github')
-  }
+    try {
+      const res = await signInWithPopup(auth, googleAuthProvider);
+      const user = res.user;
+
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+      const lastLogin = new Date().toISOString();
+
+      if (!userDoc.exists()) {
+        const signUpActivity = {
+          action: "Account Creation",
+          date: lastLogin,
+          details: "New account created with Google"
+        };
+
+        const location = await getUserLocation();
+        await setDoc(userDocRef, {
+          email: user.email,
+          name: user.displayName,
+          photoURL: user.photoURL,
+          verification: user.emailVerified,
+          createdAt: lastLogin,
+          lastLogin: lastLogin,
+          location: location,
+          activities1: [signUpActivity],
+          role: Role.Normal // Set default role for new users
+        });
+
+        await Swal.fire({
+          icon: 'success',
+          title: 'Welcome!',
+          text: 'Your account has been created successfully.',
+          confirmButtonColor: '#7A49B7'
+        });
+      }
+
+      const role = await checkAndUpdateUserRole(userDocRef);
+      const currentActivities = userDoc.exists() ? userDoc.data()?.activities1 || [] : [];
+        const loginActivity = {
+          action: "Login",
+          date: lastLogin,
+          details: "Login with Google"
+        };
+
+        const location = await getUserLocation();
+        await updateDoc(userDocRef, {
+          lastLogin: lastLogin,
+          location: location,
+          activities1: [loginActivity, ...currentActivities].slice(0, 5)
+        });
+
+      sessionStorage.setItem(
+        "user",
+        JSON.stringify({
+          uid: user.uid,
+          email: user.email,
+          verification: user.emailVerified,
+          role: role
+        })
+      );
+
+      onRequestClose();
+      window.location.reload();
+      
+      // Add user to active users in realtime database
+      await updateActiveStatus(user.uid, user.email!, user.displayName);
+
+    } catch (err) {
+      const error = err as { code?: string };
+      if (error.code === "auth/popup-closed-by-user") {
+        toast.info("Sign-in cancelled.");
+      } else {
+        toast.error("Failed to sign in with Google. Please try again.");
+      }
+      console.error("Error during Google sign-in:", error);
+    }
+  };
 
   const renderForm = () => {
     if(formType === "signUp") {
