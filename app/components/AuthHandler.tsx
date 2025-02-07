@@ -14,32 +14,51 @@ const AuthHandler = () => {
   const [userRole, setUserRole] = useState<Role | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const pathname = usePathname();
   const isV6Page = pathname?.startsWith('/v6');
 
   useEffect(() => {
+    // Clear any existing session data on mount
+    sessionStorage.removeItem('user');
+    
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
-      
       if (firebaseUser) {
-        // Get user role from Firestore
-        const userRef = doc(db, "users", firebaseUser.uid);
-        const userDoc = await getDoc(userRef);
-        const userData = userDoc.data() as User;
-        
-        if (userData) {
-          setUserRole(userData.role);
+        try {
+          const userRef = doc(db, "users", firebaseUser.uid);
+          const userDoc = await getDoc(userRef);
+          const userData = userDoc.data() as User;
           
-          // Check if premium has expired
-          if (userData.role === Role.Premium && userData.premiumExpiration) {
-            const expirationDate = new Date(userData.premiumExpiration);
-            if (expirationDate < new Date()) {
-              setUserRole(Role.Normal);
+          if (userData) {
+            setUser(firebaseUser);
+            if (userData.role === Role.Premium && userData.premiumExpiration) {
+              const expirationDate = new Date(userData.premiumExpiration);
+              setUserRole(expirationDate < new Date() ? Role.Normal : Role.Premium);
+            } else {
+              setUserRole(userData.role);
             }
+            
+            sessionStorage.setItem('user', JSON.stringify({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              verification: firebaseUser.emailVerified,
+              role: userData.role
+            }));
+          } else {
+            setUser(null);
+            setUserRole(null);
+            sessionStorage.removeItem('user');
           }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+          setUser(null);
+          setUserRole(null);
+          sessionStorage.removeItem('user');
         }
       } else {
+        setUser(null);
         setUserRole(null);
+        sessionStorage.removeItem('user');
       }
     });
 

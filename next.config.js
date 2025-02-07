@@ -20,11 +20,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  output: 'standalone',
-  // If you're using experimental features, keep them
-  // experimental: {
-  //   appDir: true,
-  // }
+  output: 'standalone'
 }
 
 module.exports = nextConfig 

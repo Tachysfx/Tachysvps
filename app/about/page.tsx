@@ -312,7 +312,7 @@ const About = () => {
         </div>
 
         {/* Meet the Team Section */}
-        <div className="mb-16 mt-12">
+        <div className="mb-16 mt-12" id='team'>
           <h2 className="text-3xl font-bold text-purple-600 text-center mb-12">Meet the Team</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
@@ -387,7 +387,7 @@ const About = () => {
         </div>
 
         {/* Global Presence */}
-        <div className="container mx-auto px-4 py-16 pb-0">
+        <div className="container mx-auto px-4 py-16 pb-0" id='location'>
           <div className="bg-white rounded-2xl shadow-lg border border-purple-100 p-8 mb-16">
             <h2 className="text-3xl font-bold text-purple-600 text-center mb-8">Global Presence</h2>
             <div className="grid md:grid-cols-2 gap-8 items-center">

@@ -3,8 +3,11 @@
 import Image from 'next/image';
 
 import CountUp from 'react-countup';
-import { imgYears, imgCenters, imgLatency, imgHappy } from '../lib/links';
 
+const imgYears="/calendar.png";
+const imgCenters="/local.png";
+const imgLatency="/latency.png";
+const imgHappy="/happy.png";
 
 export default function Cards() {
   return (

@@ -63,7 +63,7 @@ export default function Footer() {
                         </form>
                         <div>
                             <h5 className='fw-bold mb-3'>Contact Us</h5>
-                            <p className="text-light opacity-75">Rio de Janeiro - RJ, 22795-008, Brazil <br />
+                            <p className="text-light opacity-75">***, Northern Ireland, UK <br />
                             <Link className='text-light text-decoration-none hover:text-purple' href="mailto:info@tachysvps.com">info@tachysvps.com</Link></p>
                         </div>
                     </div>
@@ -100,9 +100,9 @@ export default function Footer() {
                 </Link>
                 <Link className="footer-item text-decoration-none px-3 d-flex flex-column justify-content-center align-items-center group" href="/v6/notifications">
                     <div className="position-relative">
-                        <Bell className={`text-purple-600 w-5 h-5 group-hover:text-white ${Number(1) > 0 ? 'animate-bounce' : ''}`} />
+                        <Bell className="text-purple-600 w-5 h-5 group-hover:text-white" />
                     </div>
-                    <span className="text-sm">Notifications</span>
+                    <span className="text-sm">Alerts</span>
                 </Link>
                 <Link className="footer-item text-decoration-none px-3 d-flex flex-column justify-content-center align-items-center group" href="/v6/explore">
                     <Compass className="text-purple-600 w-5 h-5 group-hover:text-white" />

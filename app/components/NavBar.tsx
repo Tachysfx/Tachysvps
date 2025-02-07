@@ -35,20 +35,26 @@ export default function NavBar() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
-      
       if (firebaseUser) {
-        // Check user role from Firestore
-        const userRef = doc(db, "users", firebaseUser.uid);
-        const userDoc = await getDoc(userRef);
-        const userData = userDoc.data() as UserType;
-        
-        if (userData && userData.role === Role.Admin) {
-          setIsAdmin(true);
-        } else {
+        try {
+          const userRef = doc(db, "users", firebaseUser.uid);
+          const userDoc = await getDoc(userRef);
+          const userData = userDoc.data() as UserType;
+          
+          if (userData) {
+            setUser(firebaseUser);
+            setIsAdmin(userData.role === Role.Admin);
+          } else {
+            setUser(null);
+            setIsAdmin(false);
+          }
+        } catch (error) {
+          console.error('Nav auth state change error:', error);
+          setUser(null);
           setIsAdmin(false);
         }
       } else {
+        setUser(null);
         setIsAdmin(false);
       }
     });
@@ -65,12 +71,12 @@ export default function NavBar() {
           Forex VPS Plans
         </Link>
         <ul className="dropdown-menu">
-          <li><Link className="dropdown-item group" href="/#pricing">Cheap Forex VPS <small>Starts $34 per month</small></Link></li>
-          <li><Link className="dropdown-item group" href="/#pricing">Best Forex VPS <small>starts $80 per month</small></Link></li>
-          <li><Link className="dropdown-item group" href="/#pricing">Virtual Dedicated Server <small>starts $250 per month</small></Link></li>
+          <li data-bs-dismiss="offcanvas" aria-label="Close"><Link className="dropdown-item group" href="/#pricing">Cheap Forex VPS <small>Starts $34 per month</small></Link></li>
+          <li data-bs-dismiss="offcanvas" aria-label="Close"><Link className="dropdown-item group" href="/#pricing">Best Forex VPS <small>starts $80 per month</small></Link></li>
+          <li data-bs-dismiss="offcanvas" aria-label="Close"><Link className="dropdown-item group" href="/#pricing">Virtual Dedicated Server <small>starts $250 per month</small></Link></li>
         </ul>
       </li>
-      <li className="nav-item">
+      <li className="nav-item" data-bs-dismiss="offcanvas" aria-label="Close">
         <Link className="nav-link d-flex align-items-center px-3 py-2 group boldd" href="/market">
           <Store className="text-purple-600 w-5 h-5 me-3 md:group-hover:text-purple-600 group-hover:text-white" />
           Algos Market
@@ -81,14 +87,14 @@ export default function NavBar() {
           <Users2 className="text-purple-600 w-5 h-5 me-3 md:group-hover:text-purple-600 group-hover:text-white" />
           Partnerships
         </Link>
-        <ul className="dropdown-menu">
-          <li><Link className="dropdown-item d-flex align-items-center hover:bg-purple-600 group" href="/partnership"><Users2 className="text-purple-600 me-2 group-hover:text-white" />Affiliates & Promotions</Link></li>
-          {user && (
-            <li><Link className="dropdown-item d-flex align-items-center hover:bg-purple-600 group" href="/v6/affiliates"><LayoutDashboard className="text-purple-600 me-2 group-hover:text-white" />Dashboard</Link></li>
-          )}
-        </ul>
-      </li>
-      <li className="nav-item separate">
+          <ul className="dropdown-menu">
+            <li data-bs-dismiss="offcanvas" aria-label="Close"><Link className="dropdown-item d-flex align-items-center hover:bg-purple-600 group" href="/partnership"><Users2 className="text-purple-600 me-2 group-hover:text-white" />Affiliates & Promotions</Link></li>
+            {user && (
+              <li data-bs-dismiss="offcanvas" aria-label="Close"><Link className="dropdown-item d-flex align-items-center hover:bg-purple-600 group" href="/v6/affiliates"><LayoutDashboard className="text-purple-600 me-2 group-hover:text-white" />Dashboard</Link></li>
+            )}
+          </ul>
+        </li>
+        <li className="nav-item separate" data-bs-dismiss="offcanvas" aria-label="Close">
         <Link className="nav-link d-flex align-items-center px-3 py-2 hover:bg-purple-600 hover:text-white group" href="/#pricing">
           <CreditCard className="text-purple-600 w-5 h-5 me-3 group-hover:text-white" />
           Pricing
@@ -100,17 +106,22 @@ export default function NavBar() {
           About Us
         </Link>
         <ul className="dropdown-menu">
-          <li><Link className="dropdown-item d-flex align-items-center hover:bg-purple-600 group" href="/about"><MapPin className="text-purple-600 w-5 h-5 me-3 group-hover:text-white" />Locations</Link></li>
-          <li><Link className="dropdown-item d-flex align-items-center hover:bg-purple-600 group" href="/#faq"><HelpCircle className="text-purple-600 w-5 h-5 me-3 group-hover:text-white" />FAQs</Link></li>
-          <li><Link className="dropdown-item d-flex align-items-center hover:bg-purple-600 group" href="/about"><Building2 className="text-purple-600 w-5 h-5 me-3 group-hover:text-white" />Team</Link></li>
+          <li data-bs-dismiss="offcanvas" aria-label="Close"><Link className="dropdown-item d-flex align-items-center hover:bg-purple-600 group" href="/about#location"><MapPin className="text-purple-600 w-5 h-5 me-3 group-hover:text-white" />Locations</Link></li>
+          <li data-bs-dismiss="offcanvas" aria-label="Close"><Link className="dropdown-item d-flex align-items-center hover:bg-purple-600 group" href="/#faq"><HelpCircle className="text-purple-600 w-5 h-5 me-3 group-hover:text-white" />FAQs</Link></li>
+          <li data-bs-dismiss="offcanvas" aria-label="Close"><Link className="dropdown-item d-flex align-items-center hover:bg-purple-600 group" href="/about#team"><Building2 className="text-purple-600 w-5 h-5 me-3 group-hover:text-white" />Team</Link></li>
         </ul>
       </li>
-      <li className="nav-item separate">
+      <li className="nav-item separate" data-bs-dismiss="offcanvas" aria-label="Close">
         <Link className="nav-link d-flex align-items-center px-3 py-2 hover:bg-purple-600 hover:text-white group" href="/contact-us">
           <HeadphonesIcon className="text-purple-600 w-5 h-5 me-3 group-hover:text-white" />
           Support
         </Link>
       </li>
+      <div className='separate mb-5'>
+          <br />
+          <br />
+          <br />
+      </div>
     </>
   );
 
@@ -155,61 +166,61 @@ export default function NavBar() {
                 {/* Authenticated user items */}
                 {user && (
                   <>
-                    <li className="nav-item separate">
+                    <li className="nav-item separate" data-bs-dismiss="offcanvas" aria-label="Close">
                       <Link className="nav-link d-flex align-items-center px-3 py-2 hover:bg-purple-600 hover:text-white group" aria-current="page" href="/v6/dashboard">
                         <LayoutDashboard className="text-purple-600 w-5 h-5 me-3 group-hover:text-white" />
                         <span>Dashboard</span>
                       </Link>
                     </li>
-                    <li className="nav-item separate">
+                    <li className="nav-item separate" data-bs-dismiss="offcanvas" aria-label="Close">
                       <Link className="nav-link d-flex align-items-center px-3 py-2 hover:bg-purple-600 hover:text-white group" href="/v6/account">
                         <UserCircle className="text-purple-600 w-5 h-5 me-3 group-hover:text-white" />
                         My Account
                       </Link>
                     </li>
-                    <li className="nav-item separate">
+                    <li className="nav-item separate" data-bs-dismiss="offcanvas" aria-label="Close">
                       <Link className="nav-link d-flex align-items-center px-3 py-2 hover:bg-purple-600 hover:text-white group" href="/v6/vps">
                         <Server className="text-purple-600 w-5 h-5 me-3 group-hover:text-white" />
                         <span>VPS Management</span>
                       </Link>
                     </li>
-                    <li className="nav-item separate">
+                    <li className="nav-item separate" data-bs-dismiss="offcanvas" aria-label="Close">
                       <Link className="nav-link d-flex align-items-center px-3 py-2 hover:bg-purple-600 hover:text-white group" href="/v6/vps/edits">
                         <ArrowUpCircle className="text-purple-600 w-5 h-5 me-3 group-hover:text-white" />
                         <span>Upgrade</span>
                       </Link>
                     </li>
-                    <li className="nav-item separate">
+                    <li className="nav-item separate" data-bs-dismiss="offcanvas" aria-label="Close">
                       <Link className="nav-link d-flex align-items-center px-3 py-2 hover:bg-purple-600 hover:text-white group" href="/v6/seller">
                         <Store className="text-purple-600 w-5 h-5 me-3 group-hover:text-white" />
                         Seller
                       </Link>
                     </li>
-                    <li className="nav-item separate">
+                    <li className="nav-item separate" data-bs-dismiss="offcanvas" aria-label="Close">
                       <Link className="nav-link d-flex align-items-center px-3 py-2 hover:bg-purple-600 hover:text-white group" href="/v6/posts">
                         <FileText className="text-purple-600 w-5 h-5 me-3 group-hover:text-white" />
                         <span>Posts</span>
                       </Link>
                     </li>
-                    <li className="nav-item separate">
+                    <li className="nav-item separate" data-bs-dismiss="offcanvas" aria-label="Close">
                       <Link className="nav-link d-flex align-items-center px-3 py-2 hover:bg-purple-600 hover:text-white group" href="/v6/payment">
                         <CreditCard className="text-purple-600 w-5 h-5 me-3 group-hover:text-white" />
                         <span>Payments</span>
                       </Link>
                     </li>
-                    <li className="nav-item separate">
+                    <li className="nav-item separate" data-bs-dismiss="offcanvas" aria-label="Close">
                       <Link className="nav-link d-flex align-items-center px-3 py-2 hover:bg-purple-600 hover:text-white group" href="/v6/withdrawal">
                         <BanknoteIcon className="text-purple-600 w-5 h-5 me-3 group-hover:text-white" />
                         <span>Withdrawal</span>
                       </Link>
                     </li>
-                    <li className="nav-item separate">
+                    <li className="nav-item separate" data-bs-dismiss="offcanvas" aria-label="Close">
                       <Link className="nav-link d-flex align-items-center px-3 py-2 hover:bg-purple-600 hover:text-white group" href="/v6/downloads">
                         <Download className="text-purple-600 w-5 h-5 me-3 group-hover:text-white" />
                         <span>Downloads</span>
                       </Link>
                     </li>
-                    <li className="nav-item separate">
+                    <li className="nav-item separate" data-bs-dismiss="offcanvas" aria-label="Close">
                       <Link className="nav-link d-flex align-items-center px-3 py-2 hover:bg-purple-600 hover:text-white group" href="/v6/notifications">
                         <Bell className="text-purple-600 w-5 h-5 me-3 group-hover:text-white" />
                         <span className="text-gray-800 group-hover:text-white">Notifications</span>
@@ -227,7 +238,7 @@ export default function NavBar() {
 
                 {/* Admin-only items */}
                 {isAdmin && (
-                  <li className="nav-item separate mb-5">
+                  <li className="nav-item separate mb-5" data-bs-dismiss="offcanvas" aria-label="Close">
                     <Link className="nav-link d-flex align-items-center px-3 py-2 hover:bg-purple-600 hover:text-white group" href="/admin/dashboard">
                       <Settings className="text-purple-600 w-5 h-5 me-3 group-hover:text-white" />
                       Admin Dashboard

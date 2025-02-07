@@ -57,9 +57,9 @@ export default function ContactPage() {
             {
               icon: Phone,
               title: "Call Us",
-              content: "+123 456 789",
+              content: "+44 2890 ***",
               action: "Call now",
-              link: "tel:+123456789",
+              link: "tel:+442890***",
               color: "bg-emerald-500"
             },
             {

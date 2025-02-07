@@ -489,7 +489,7 @@ export default function Others() {
                           </span>
                           100GB NVMe/400GB SSD
                         </li>
-                        <li className="py-2">
+                        <li className="py-2 border-bottom d-flex align-items-center gap-2">
                           <span className="badge bg-purple-100 text-purple p-2 rounded-circle">
                             <Bot className="text-purple w-5 h-5" />
                           </span>
@@ -533,7 +533,7 @@ export default function Others() {
                           </span>
                           200GB NVMe/400GB SSD
                         </li>
-                        <li className="py-2">
+                        <li className="py-2 border-bottom d-flex align-items-center gap-2">
                           <span className="badge bg-purple-100 text-purple p-2 rounded-circle">
                             <Bot className="text-purple w-5 h-5" />
                           </span>
@@ -574,7 +574,7 @@ export default function Others() {
                           </span>
                           300GB NVMe/1.2TB SSD
                         </li>
-                        <li className="py-2">
+                        <li className="py-2 border-bottom d-flex align-items-center gap-2">
                           <span className="badge bg-purple-100 text-purple p-2 rounded-circle">
                             <Bot className="text-purple w-5 h-5" />
                           </span>
@@ -615,7 +615,7 @@ export default function Others() {
                           </span>
                           400GB NVMe/1.8TB SSD
                         </li>
-                        <li className="py-2">
+                        <li className="py-2 border-bottom d-flex align-items-center gap-2">
                           <span className="badge bg-purple-100 text-purple p-2 rounded-circle">
                             <Bot className="text-purple w-5 h-5" />
                           </span>
@@ -656,7 +656,7 @@ export default function Others() {
                           </span>
                           180GB NVMe
                         </li>
-                        <li className="py-2">
+                        <li className="py-2 border-bottom d-flex align-items-center gap-2">
                           <span className="badge bg-purple-100 text-purple p-2 rounded-circle">
                             <Bot className="text-purple w-5 h-5" />
                           </span>
@@ -697,7 +697,7 @@ export default function Others() {
                           </span>
                           Customizable Storage
                         </li>
-                        <li className="py-2">
+                        <li className="py-2 border-bottom d-flex align-items-center gap-2">
                           <span className="badge bg-purple-100 text-purple p-2 rounded-circle">
                             <Bot className="text-purple w-5 h-5" />
                           </span>
@@ -861,10 +861,10 @@ export default function Others() {
                         src={tes1}
                         width={120}
                         height={120}
-                        alt="Priya Kumar"
+                        alt="Denil Kumar"
                         className="img-fluid rounded-circle mb-3 mx-auto"
                       />
-                      <h5 className="mb-1 text-center">Priya Kumar</h5>
+                      <h5 className="mb-1 text-center">Denil Kumar</h5>
                       <p className="text-muted small mb-0 text-center">Mumbai, India</p>
                     </div>
                     <div className="col-md-8">
@@ -999,7 +999,7 @@ export default function Others() {
           <div className="px-4 mt-5 text-start bg-white" id='faq'>
             <div className="max-w-6xl mx-auto py-16">
               <h1 className="text-4xl text-purple font-bold text-center mb-4">Frequently Asked Questions</h1>
-              <p className="text-gray-600 text-center mb-12 max-w-2xl mx-auto">Find answers to common questions about Tachys VPS and our services. Can't find what you're looking for? Contact our support team.</p>
+              <p className="text-gray-600 text-center mb-12 max-w-2xl mx-auto">Find answers to common questions about Tachys VPS and our services. Can't find what you're looking for? Contact our support team <Link href="/contact-us" className='text-purple-800 fw-bold'>here</Link>.</p>
               <div className="space-y-1">
                 <div className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow">
                   <details className="group">

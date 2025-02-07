@@ -18,14 +18,22 @@ const firebaseConfig = {
   databaseURL: "https://tachys-fx-default-rtdb.europe-west1.firebasedatabase.app/" // Add this line
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+let app;
+let analytics;
+
+// Initialize Firebase only on client side
+if (typeof window !== 'undefined') {
+  app = initializeApp(firebaseConfig);
+  analytics = getAnalytics(app);
+} else {
+  app = initializeApp(firebaseConfig);
+}
+
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app); // Initialize Firebase Storage
-const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
-const googleAuthProvider = new GoogleAuthProvider();
 const realtimeDb = getDatabase(app); // Initialize Realtime Database
+const googleAuthProvider = new GoogleAuthProvider();
 const githubAuthProvider = new GithubAuthProvider();
 
 // Analytics helper function
