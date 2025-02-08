@@ -6,7 +6,6 @@ import Image from "next/image";
 import { Star } from "lucide-react";
 import AdvancedSearch from "./Filter";
 import { Algo } from "../types/index";
-import { getAlgoImageUrl } from "../functions/storage";
 
 type MarketClientProps = {
   enrichedAlgos: Algo[];
@@ -14,18 +13,7 @@ type MarketClientProps = {
 
 const ITEMS_PER_PAGE = 18; // Reduced to show 12 items per section
 
-const AlgoCard = ({ algo }: { algo: Algo }) => {
-  const [imageUrl, setImageUrl] = useState<string>('');
-
-  useEffect(() => {
-    const loadImage = async () => {
-      const url = await getAlgoImageUrl('Algos_Images', algo.image);
-      if (url) setImageUrl(url);
-    };
-    loadImage();
-  }, [algo.image]);
-
-  return (
+const AlgoCard = ({ algo }: { algo: Algo }) => (
     <div className="col-6 col-md-2 mb-2 px-1">
       <Link href={`/market/${algo.id}`} className="card-link">
         <div className="card hover-card">
@@ -35,7 +23,7 @@ const AlgoCard = ({ algo }: { algo: Algo }) => {
               <span className="badge-new">{algo.platform}</span>
             </div>
             <Image
-              src={imageUrl || '/placeholder.png'}
+              src={algo.image || '/placeholder.png'}
               width={100}
               height={160}
               alt={algo.name}
@@ -65,7 +53,7 @@ const AlgoCard = ({ algo }: { algo: Algo }) => {
               <div className="d-flex flex-column align-items-center">
                 <div className="d-flex align-items-center">
                   <Image
-                    src={imageUrl || '/placeholder.png'}
+                    src={algo.image || '/placeholder.png'}
                     width={30}
                     height={50}
                     alt={algo.name}
@@ -90,8 +78,7 @@ const AlgoCard = ({ algo }: { algo: Algo }) => {
         </div>
       </Link>
     </div>
-  );
-};
+);
 
 export default function MarketClient({ enrichedAlgos }: MarketClientProps) {
   const [searchQuery, setSearchQuery] = useState<string>("");

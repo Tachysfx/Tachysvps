@@ -31,7 +31,6 @@ export class StorageService {
       });
       return url;
     } catch (error) {
-      console.error('Error uploading file:', error);
       throw error;
     }
   }
@@ -44,7 +43,6 @@ export class StorageService {
    */
   async getFileUrl(folder: string, fileName: string): Promise<string> {
     try {
-      console.log(`🔍 Checking blob storage - Folder: ${folder}, File: ${fileName}`);
       
       // First check if folder exists
       const { blobs } = await list({ 
@@ -53,25 +51,19 @@ export class StorageService {
       });
       
       if (blobs.length === 0) {
-        console.log(`❌ Folder '${folder}' not found in blob storage`);
         return '/placeholder.png';
       }
-      
-      console.log(`✅ Folder '${folder}' exists with ${blobs.length} files`);
       
       // Then try to get specific file
       try {
         const { url } = await head(`${folder}/${fileName}`, {
           token: BLOB_READ_WRITE_TOKEN
         });
-        console.log(`✅ File '${fileName}' found in blob storage`);
         return url;
       } catch (error) {
-        console.log(`❌ File '${fileName}' not found in folder '${folder}'`);
         return '/placeholder.png';
       }
     } catch (error) {
-      console.error('Error getting file URL:', error);
       return '/placeholder.png';
     }
   }
@@ -87,7 +79,6 @@ export class StorageService {
         token: BLOB_READ_WRITE_TOKEN
       });
     } catch (error) {
-      console.error('Error deleting file:', error);
       throw error;
     }
   }
@@ -111,7 +102,6 @@ export class StorageService {
       // Upload new file
       return await this.uploadFile(file, folder);
     } catch (error) {
-      console.error('Error replacing file:', error);
       throw error;
     }
   }
@@ -126,7 +116,6 @@ export class StorageService {
       const { blobs } = await list({ prefix: folder });
       return blobs.map(blob => blob.url);
     } catch (error) {
-      console.error('Error listing files:', error);
       throw error;
     }
   }
@@ -135,8 +124,6 @@ export class StorageService {
 // Helper functions for common operations
 export const getAlgoImageUrl = async (folder: string, fileName: string): Promise<string | null> => {
   try {
-    // Log the folder and fileName for debugging
-    console.log(`Fetching image URL for folder: ${folder}, fileName: ${fileName}`);
     
     const response = await fetch(
       `/api/storage?folder=${folder}&fileName=${fileName}`
@@ -144,7 +131,6 @@ export const getAlgoImageUrl = async (folder: string, fileName: string): Promise
     const data = await response.json() as { success: boolean; url: string };
     return data.success ? data.url : null;
   } catch (error) {
-    console.error('Error getting image URL:', error);
     return null;
   }
 };
@@ -167,7 +153,6 @@ export const uploadAlgoImage = async (file: File): Promise<{ url: string; fileNa
     };
     return data.success ? { url: data.url, fileName: data.fileName } : null;
   } catch (error) {
-    console.error('Error uploading image:', error);
     return null;
   }
 };

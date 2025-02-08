@@ -1,14 +1,5 @@
-import type { Metadata } from "next";
-import "./globals.css";
-import { ToastContainer } from 'react-toastify'
-import 'react-toastify/dist/ReactToastify.css'
-import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap/dist/css/bootstrap.css";
-import "./functions/bootstrap.css";
-import NavBar from "./components/NavBar";
-import BootstrapJS from "./lib/BootstrapJS";
-import Footer from "./components/Footer";
-import AuthHandler from "./components/AuthHandler";
+import Partnership from "../components/Partnership";
+import type { Metadata } from 'next'
 
 
 export const metadata: Metadata = {
@@ -33,41 +24,12 @@ export const metadata: Metadata = {
       },
     ],
   },
-  other: {
-    'google': 'notranslate',
-  },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function page() {
   return (
-    <html lang="en">
-      <head>
-        <meta name="google" content="notranslate" />
-        <meta httpEquiv="Content-Language" content="en" />
-      </head>
-      <body className="antialiased bg-gray-100">
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-        />
-        <BootstrapJS />
-        <NavBar />
-        {children}
-        <Footer />
-        <AuthHandler />
-      </body>
-    </html>
-  );
+    <div className="bg-gray-100">
+      <Partnership />
+    </div>
+  )
 }
