@@ -2,105 +2,78 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from 'next/navigation';
-import { auth, db } from '../functions/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
 import AuthModal from "./AuthModal";
 import PremiumMembershipModal from "./PremiumMembershipModal";
-import { Role, User } from "../types/index";
+import { Role } from "../types/index";
+
+// Add a global variable to track instances
+let isHandlerMounted = false;
 
 const AuthHandler = () => {
-  const [user, setUser] = useState<any>(null);
-  const [userRole, setUserRole] = useState<Role | null>(null);
+  // Add check for multiple instances
+  useEffect(() => {
+    if (isHandlerMounted) {
+      console.warn('Multiple instances of AuthHandler detected');
+      return () => {};
+    }
+    isHandlerMounted = true;
+    return () => {
+      isHandlerMounted = false;
+    };
+  }, []);
+
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const pathname = usePathname();
   const isV6Page = pathname?.startsWith('/v6');
 
+  // Add new useEffect for custom event listener
   useEffect(() => {
-    // Clear any existing session data on mount
-    sessionStorage.removeItem('user');
-    
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        try {
-          const userRef = doc(db, "users", firebaseUser.uid);
-          const userDoc = await getDoc(userRef);
-          const userData = userDoc.data() as User;
-          
-          if (userData) {
-            setUser(firebaseUser);
-            if (userData.role === Role.Premium && userData.premiumExpiration) {
-              const expirationDate = new Date(userData.premiumExpiration);
-              setUserRole(expirationDate < new Date() ? Role.Normal : Role.Premium);
-            } else {
-              setUserRole(userData.role);
-            }
-            
-            sessionStorage.setItem('user', JSON.stringify({
-              uid: firebaseUser.uid,
-              email: firebaseUser.email,
-              verification: firebaseUser.emailVerified,
-              role: userData.role
-            }));
-          } else {
-            setUser(null);
-            setUserRole(null);
-            sessionStorage.removeItem('user');
-          }
-        } catch (error) {
-          console.error('Error fetching user data:', error);
-          setUser(null);
-          setUserRole(null);
-          sessionStorage.removeItem('user');
-        }
-      } else {
-        setUser(null);
-        setUserRole(null);
-        sessionStorage.removeItem('user');
-      }
-    });
+    const handleOpenAuthModal = () => {
+      setIsAuthModalOpen(true);
+    };
 
-    return () => unsubscribe();
+    window.addEventListener('openAuthModal', handleOpenAuthModal);
+    
+    return () => {
+      window.removeEventListener('openAuthModal', handleOpenAuthModal);
+    };
   }, []);
 
   useEffect(() => {
     let authTimer: NodeJS.Timeout;
     let premiumTimer: NodeJS.Timeout;
 
-    const showAuthModal = () => {
-      if (!user && !isV6Page) {
-        setIsAuthModalOpen(true);
-        authTimer = setTimeout(showAuthModal, 180000);
-      }
-    };
-
-    const showPremiumModal = () => {
-      if (userRole === Role.Normal) {
-        setIsPremiumModalOpen(true);
-        premiumTimer = setTimeout(showPremiumModal, 180000);
-      }
-    };
-
-    if (!user) {
-      if (isV6Page) {
-        setIsAuthModalOpen(true);
+    const checkAuth = () => {
+      const userSession = sessionStorage.getItem('user');
+      const user = userSession ? JSON.parse(userSession) : null;
+      
+      if (!user) {
+        if (isV6Page) {
+          setIsAuthModalOpen(true);
+        } else {
+          authTimer = setTimeout(() => setIsAuthModalOpen(true), 90000);
+        }
       } else {
-        authTimer = setTimeout(showAuthModal, 60000);
+        setIsAuthModalOpen(false);
+        if (user.role === Role.Normal) {
+          premiumTimer = setTimeout(() => setIsPremiumModalOpen(true), 90000);
+        }
       }
-    } else {
-      setIsAuthModalOpen(false);
-      if (userRole === Role.Normal) {
-        premiumTimer = setTimeout(showPremiumModal, 60000);
-      }
-    }
+    };
+
+    // Initial check
+    checkAuth();
+
+    // Set up periodic checks
+    const intervalId = setInterval(checkAuth, 180000); // Check every 3 minutes
 
     return () => {
       if (authTimer) clearTimeout(authTimer);
       if (premiumTimer) clearTimeout(premiumTimer);
+      clearInterval(intervalId);
     };
-  }, [isV6Page, user, userRole]);
+  }, [isV6Page]);
 
   const handleCloseAuthModal = () => {
     if (!isV6Page) {

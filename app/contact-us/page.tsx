@@ -4,7 +4,7 @@ import {
   Phone, Clock, Globe,
 } from 'lucide-react';
 import Link from 'next/link';
-import ContactForm from '@/app/components/ContactForm';
+import ContactForm from '../components/ContactForm';
 
 export const metadata: Metadata = {
     title: "Tachys FX",

@@ -9,6 +9,7 @@ import NavBar from "./components/NavBar";
 import BootstrapJS from "./lib/BootstrapJS";
 import Footer from "./components/Footer";
 import AuthHandler from "./components/AuthHandler";
+import FontAwesomeLoader from "./lib/FontAwesomeLoader";
 
 
 export const metadata: Metadata = {
@@ -38,6 +39,7 @@ export const metadata: Metadata = {
   },
 };
 
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -50,6 +52,7 @@ export default function RootLayout({
         <meta httpEquiv="Content-Language" content="en" />
       </head>
       <body className="antialiased bg-gray-100">
+        <FontAwesomeLoader />
         <ToastContainer
           position="top-right"
           autoClose={3000}

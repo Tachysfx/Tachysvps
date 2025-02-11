@@ -11,21 +11,26 @@ interface PremiumMembershipModalProps {
 export default function PremiumMembershipModal({ isOpen, onClose }: PremiumMembershipModalProps) {
   const handlePurchase = async () => {
     try {
-      const user = auth.currentUser;
-      if (!user) {
+      const userSession = sessionStorage.getItem('user');
+      if (!userSession) {
         toast.error('Please sign in to continue');
         return;
       }
 
-      const response = await fetch('/api/payment/membership', {
+      const userData = JSON.parse(userSession);
+      const response = await fetch('/api/payment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: user.uid,
           amount: 7,
-          type: 'membership'
+          type: 'payment',
+          description: 'Premium Membership Subscription',
+          customerEmail: userData.email,
+          metadata: {
+            membershipId: crypto.randomUUID()
+          }
         }),
       });
 

@@ -50,9 +50,9 @@ const StarRating = ({ rating }: { rating: number }) => (
 export default function AlgoDetails({ enrichedAlgo, enrichedAlgos, id }: AlgoDetailsProps) {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const openAuthModal = () => setIsAuthModalOpen(true);
   const [markdownContent, setMarkdownContent] = useState<string>('');
   
+  const openAuthModal = () => setIsAuthModalOpen(true);
   const download = `/market/${id}/download`;
   const author = '/seller';
 
@@ -65,12 +65,8 @@ export default function AlgoDetails({ enrichedAlgo, enrichedAlgos, id }: AlgoDet
     const fetchMarkdownContent = async () => {
       if (enrichedAlgo.identity === "Internal" && enrichedAlgo.md_description) {
         try {
-          const filename = enrichedAlgo.md_description.split('/').pop();
-          if (!filename) {
-            throw new Error('Invalid markdown file path');
-          }
-
-          const response = await fetch(`/api/markdown?path=${filename}`);
+          // Since md_description is now a full blob storage URL
+          const response = await fetch(enrichedAlgo.md_description);
           if (!response.ok) throw new Error('Failed to fetch markdown content');
           const content = await response.text();
           setMarkdownContent(content);
@@ -84,6 +80,27 @@ export default function AlgoDetails({ enrichedAlgo, enrichedAlgos, id }: AlgoDet
     fetchMarkdownContent();
   }, [enrichedAlgo.identity, enrichedAlgo.md_description]);
 
+  const renderContent = () => {
+    if (enrichedAlgo.identity === "External") {
+      return (
+        <div 
+          className="descriptionHTML" 
+          dangerouslySetInnerHTML={{ __html: enrichedAlgo.descriptionHTML || '' }} 
+        />
+      );
+    } else if (enrichedAlgo.identity === "Internal") {
+      if (!markdownContent) {
+        return <p>Loading content...</p>;
+      }
+      return (
+        <div className="markdown-content prose prose-purple max-w-none">
+          <ReactMarkdown>{markdownContent}</ReactMarkdown>
+        </div>
+      );
+    }
+    return null;
+  };
+
   const handlePurchase = async () => {
     if (!isLoggedIn) {
       openAuthModal();
@@ -91,16 +108,28 @@ export default function AlgoDetails({ enrichedAlgo, enrichedAlgos, id }: AlgoDet
     }
 
     try {
-      const response = await fetch('/api/payment/create', {
+      const userSession = sessionStorage.getItem('user');
+      if (!userSession) {
+        toast.error('Please sign in to continue');
+        return;
+      }
+
+      const userData = JSON.parse(userSession);
+      const response = await fetch('/api/payment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          algoId: id,
           amount: enrichedAlgo.buy_price,
-          sellerId: enrichedAlgo.sellerId,
-          algoName: enrichedAlgo.name
+          type: 'payment',
+          description: `Purchase of ${enrichedAlgo.name} algorithm`,
+          customerEmail: userData.email,
+          metadata: {
+            algoId: id,
+            sellerId: enrichedAlgo.sellerId,
+            algoName: enrichedAlgo.name
+          }
         }),
       });
 
@@ -134,25 +163,6 @@ export default function AlgoDetails({ enrichedAlgo, enrichedAlgos, id }: AlgoDet
         Download
       </Link>
     );
-  };
-
-  const renderContent = () => {
-    if (enrichedAlgo.identity === "External") {
-      return (
-        <div className="descriptionHTML" 
-          dangerouslySetInnerHTML={{ __html: enrichedAlgo.descriptionHTML || '' }} 
-        />
-      );
-    } else if (enrichedAlgo.identity === "Internal") {
-      return (
-        <div className="markdown-content">
-          <ReactMarkdown>
-            {markdownContent}
-          </ReactMarkdown>
-        </div>
-      );
-    }
-    return null;
   };
 
   return (

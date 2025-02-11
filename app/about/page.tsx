@@ -1,6 +1,8 @@
 import { Metadata } from 'next'
 import Image from 'next/image';
 import Link from 'next/link';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faAward } from '@fortawesome/free-solid-svg-icons';
 import {
   Rocket,
   ShieldCheck,
@@ -16,8 +18,7 @@ import {
   MapPin,
   Shield,
   BarChart3,
-  UserCheck,
-  Medal
+  UserCheck 
 } from 'lucide-react';
 
 export const metadata: Metadata = {
@@ -99,7 +100,8 @@ const About = () => {
             ].map((award, index) => (
               <div key={index} className="bg-white p-6 rounded-xl shadow-lg border border-purple-100 text-center">
                 <div className="w-14 h-14 mx-auto mb-2 bg-gradient-to-br from-purple-100 to-purple-200 rounded-2xl flex items-center justify-center group-hover:from-purple-200 group-hover:to-purple-300 transition-all duration-300">
-                  <Medal className="w-8 h-8 text-purple-400" />
+                  {/* <Medal className="w-8 h-8 text-purple-400" /> */}
+                  <FontAwesomeIcon icon={faAward} className="text-4xl text-purple-600 m-4" />
                 </div>
                 <div className="font-semibold text-purple-600 mb-2">{award.award}</div>
                 <div className="text-sm text-gray-600">{award.org}</div>

@@ -6,8 +6,12 @@ import Link from 'next/link';
 import { 
   DollarSign, PieChart, MessageCircleHeart, 
   LineChart, Receipt, Crosshair, 
-  Check, ArrowRight, ShieldCheck, Clock, Gift 
+  Check, ArrowRight 
 } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { 
+  faShieldAlt, faClock, faGift 
+} from '@fortawesome/free-solid-svg-icons';
 import { motion } from 'framer-motion';
 
 export default function Partnership() {
@@ -48,17 +52,17 @@ export default function Partnership() {
     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
       {[
         {
-          icon: ShieldCheck,
+          icon: faShieldAlt,
           title: "Secure Payments",
           description: "Your earnings are protected with industry-standard security"
         },
         {
-          icon: Clock,
+          icon: faClock,
           title: "Quick Onboarding",
           description: "Start earning within 24 hours of joining"
         },
         {
-          icon: Gift,
+          icon: faGift,
           title: "Bonus Rewards",
           description: "Earn extra bonuses for high performance"
         }
@@ -71,7 +75,7 @@ export default function Partnership() {
           className="bg-gradient-to-br from-purple-50 to-white p-6 rounded-2xl shadow-lg border border-purple-100"
         >
           <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center mb-4">
-            <factor.icon className="text-xl text-white" size={24} />
+            <FontAwesomeIcon icon={factor.icon} className="text-xl text-white" />
           </div>
           <h3 className="text-xl font-semibold text-purple-600 mb-2">{factor.title}</h3>
           <p className="text-gray-600">{factor.description}</p>

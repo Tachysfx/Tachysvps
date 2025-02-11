@@ -246,6 +246,7 @@ export type Algo = {
   description: string;
   descriptionHTML: string;
   image: string;
+  image_path: string;
   identity: Identity;
   cost: Cost;
   buy_price: number;
@@ -256,15 +257,20 @@ export type Algo = {
   version: string;
   uploaded: string;
   updated: string;
-  md_description: string;
+  md_description?: string;
+  md_path?: string;
   ratings: Array<string>; // Array of rating IDs
   rating: number; // Average rating
   ratingCount: number;
   commentCount: number;
   comments: Array<string>; // Array of comment IDs
   reviews: Array<string>; // Array of review IDs
-  screenshots: Array<string>;
+  screenshots: Array<{
+    url: string;
+    path: string;
+  }>;
   status: Status;  // default NotComplete
+  app_path: string;
 };
 
 export enum Role {
@@ -279,7 +285,8 @@ export type User = {
   role: Role;
   premiumExpiration?: string;
   email: string;
-  photoURl: string;
+  photoURL?: string;
+  photoURL_path?: string;
   location: {
     city: string;
     country: string;

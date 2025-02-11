@@ -1,13 +1,26 @@
 import { put, del, list, head } from '@vercel/blob';
-import type { PutBlobResult } from '@vercel/blob';
+import { db } from './firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 
-// Add your blob store token
-const BLOB_READ_WRITE_TOKEN = "vercel_blob_rw_H8BF1SyDn7XDuFt2_mMwsW2OVhhvHQewWxJ45hw7ajX6pJx";
+export interface StorageOptions {
+  access: 'public' | 'private';
+  folder: string;
+  token: string;
+  metadata?: Record<string, string>;
+  dbUpdate?: {
+    collection: string;
+    docId: string;
+    field: string;
+  };
+}
 
 export class StorageService {
   private static instance: StorageService;
+  private readonly token: string;
   
-  private constructor() {}
+  private constructor() {
+    this.token = process.env.BLOB_READ_WRITE_TOKEN || '';
+  }
 
   static getInstance(): StorageService {
     if (!StorageService.instance) {
@@ -17,109 +30,122 @@ export class StorageService {
   }
 
   /**
-   * Upload a file to Vercel Blob storage
-   * @param file Blob or File to upload
-   * @param folder Folder path
-   * @returns URL of the uploaded file
+   * Generate a storage path for a file
    */
-  async uploadFile(file: Blob | File, folder: string): Promise<string> {
+  private generatePath(folder: string, filename: string): string {
+    const timestamp = Date.now();
+    const randomString = Math.random().toString(36).substring(2, 15);
+    return `${folder}/${timestamp}-${randomString}-${filename}`;
+  }
+
+  /**
+   * Upload a file to Vercel Blob storage
+   */
+  async uploadFile(file: Blob | File, options: StorageOptions): Promise<{url: string, path: string}> {
     try {
       const filename = 'name' in file ? file.name : 'blob';
-      const { url } = await put(`${folder}/${filename}`, file, {
+      const path = this.generatePath(options.folder, filename);
+      
+      const { url } = await put(path, file, {
         access: 'public',
-        token: BLOB_READ_WRITE_TOKEN
+        token: options.token || this.token,
+        ...(options.metadata || {}) as Record<string, string>
       });
-      return url;
+
+      // Update Firestore if dbUpdate is provided
+      if (options.dbUpdate) {
+        const { collection, docId, field } = options.dbUpdate;
+        const docRef = doc(db, collection, docId);
+        await updateDoc(docRef, { 
+          [field]: url,
+          isPrivate: options.access === 'private'
+        });
+      }
+
+      return { url, path };
     } catch (error) {
-      throw error;
+      console.error('Upload error:', error);
+      throw new Error('Failed to upload file');
     }
   }
 
   /**
    * Get file URL from Vercel Blob storage
-   * @param folder Folder path
-   * @param fileName File name
-   * @returns URL of the file or placeholder URL if file doesn't exist
    */
-  async getFileUrl(folder: string, fileName: string): Promise<string> {
+  async getFileUrl(path: string, options: Omit<StorageOptions, 'folder'>): Promise<string> {
     try {
-      
-      // First check if folder exists
-      const { blobs } = await list({ 
-        prefix: folder,
-        token: BLOB_READ_WRITE_TOKEN 
+      const { url } = await head(path, {
+        token: options.token || this.token
       });
-      
-      if (blobs.length === 0) {
-        return '/placeholder.png';
-      }
-      
-      // Then try to get specific file
-      try {
-        const { url } = await head(`${folder}/${fileName}`, {
-          token: BLOB_READ_WRITE_TOKEN
-        });
-        return url;
-      } catch (error) {
-        return '/placeholder.png';
-      }
+      return url;
     } catch (error) {
-      return '/placeholder.png';
+      console.error('Get URL error:', error);
+      throw new Error('Failed to get file URL');
     }
   }
 
   /**
    * Delete a file from Vercel Blob storage
-   * @param folder Folder path
-   * @param fileName File name
    */
-  async deleteFile(folder: string, fileName: string): Promise<void> {
+  async deleteFile(path: string, options: StorageOptions): Promise<void> {
     try {
-      await del(`${folder}/${fileName}`, {
-        token: BLOB_READ_WRITE_TOKEN
+      await del(path, {
+        token: options.token || this.token
       });
+
+      // Update Firestore if dbUpdate is provided
+      if (options.dbUpdate) {
+        const { collection, docId, field } = options.dbUpdate;
+        const docRef = doc(db, collection, docId);
+        await updateDoc(docRef, { [field]: null });
+      }
     } catch (error) {
-      throw error;
+      console.error('Delete error:', error);
+      throw new Error('Failed to delete file');
     }
   }
 
   /**
    * Replace an existing file
-   * @param file New file to upload
-   * @param folder Folder path
-   * @param fileName Name of file to replace
-   * @returns URL of the new file
    */
-  async replaceFile(file: Blob | File, folder: string, fileName: string): Promise<string> {
+  async replaceFile(file: Blob | File, oldPath: string, options: StorageOptions): Promise<{url: string, path: string}> {
     try {
-      // Delete existing file if it exists
+      // Delete old file
       try {
-        await this.deleteFile(folder, fileName);
+        await this.deleteFile(oldPath, options);
       } catch (error) {
-        // Ignore error if file doesn't exist
+        console.warn('Old file deletion failed:', error);
       }
       
       // Upload new file
-      return await this.uploadFile(file, folder);
+      return await this.uploadFile(file, options);
     } catch (error) {
-      throw error;
+      console.error('Replace error:', error);
+      throw new Error('Failed to replace file');
     }
   }
 
   /**
    * List all files in a folder
-   * @param folder Folder path
-   * @returns Array of file URLs
    */
-  async listFiles(folder: string): Promise<string[]> {
+  async listFiles(options: StorageOptions): Promise<Array<{url: string, path: string}>> {
     try {
-      const { blobs } = await list({ prefix: folder });
-      return blobs.map(blob => blob.url);
+      const { blobs } = await list({
+        prefix: options.folder,
+        token: options.token || this.token
+      });
+      return blobs.map(blob => ({
+        url: blob.url,
+        path: blob.pathname
+      }));
     } catch (error) {
-      throw error;
+      console.error('List error:', error);
+      throw new Error('Failed to list files');
     }
   }
 }
+
+export const storageService = StorageService.getInstance();
 
 // Helper functions for common operations
 export const getAlgoImageUrl = async (folder: string, fileName: string): Promise<string | null> => {
@@ -155,6 +181,4 @@ export const uploadAlgoImage = async (file: File): Promise<{ url: string; fileNa
   } catch (error) {
     return null;
   }
-};
-
-export const storageService = StorageService.getInstance(); 
+}; 
