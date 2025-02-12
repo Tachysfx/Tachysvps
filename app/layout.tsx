@@ -40,6 +40,7 @@ export const metadata: Metadata = {
 };
 
 
+// npm install @fortawesome/fontawesome-svg-core @fortawesome/free-brands-svg-icons @fortawesome/free-regular-svg-icons @fortawesome/free-solid-svg-icons @fortawesome/react-fontawesome
 export default function RootLayout({
   children,
 }: Readonly<{

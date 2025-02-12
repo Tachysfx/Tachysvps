@@ -10,7 +10,7 @@ import { Role } from "../types/index";
 let isHandlerMounted = false;
 
 const AuthHandler = () => {
-  // Add check for multiple instances
+  // Instance check
   useEffect(() => {
     if (isHandlerMounted) {
       console.warn('Multiple instances of AuthHandler detected');
@@ -27,19 +27,19 @@ const AuthHandler = () => {
   const pathname = usePathname();
   const isV6Page = pathname?.startsWith('/v6');
 
-  // Add new useEffect for custom event listener
+  // Listen for manual auth modal triggers
   useEffect(() => {
     const handleOpenAuthModal = () => {
       setIsAuthModalOpen(true);
     };
 
     window.addEventListener('openAuthModal', handleOpenAuthModal);
-    
     return () => {
       window.removeEventListener('openAuthModal', handleOpenAuthModal);
     };
   }, []);
 
+  // Main auth check logic
   useEffect(() => {
     let authTimer: NodeJS.Timeout;
     let premiumTimer: NodeJS.Timeout;
@@ -49,15 +49,25 @@ const AuthHandler = () => {
       const user = userSession ? JSON.parse(userSession) : null;
       
       if (!user) {
+        // Show auth modal immediately for v6 pages or after delay for normal pages
         if (isV6Page) {
           setIsAuthModalOpen(true);
         } else {
-          authTimer = setTimeout(() => setIsAuthModalOpen(true), 90000);
+          // Only set timer if modal isn't already open
+          if (!isAuthModalOpen) {
+            authTimer = setTimeout(() => setIsAuthModalOpen(true), 180000);
+          }
         }
       } else {
+        // User is logged in
         setIsAuthModalOpen(false);
+        
+        // Check for premium membership
         if (user.role === Role.Normal) {
-          premiumTimer = setTimeout(() => setIsPremiumModalOpen(true), 90000);
+          // Only set premium timer if modal isn't already open
+          if (!isPremiumModalOpen) {
+            premiumTimer = setTimeout(() => setIsPremiumModalOpen(true), 90000);
+          }
         }
       }
     };
@@ -68,14 +78,16 @@ const AuthHandler = () => {
     // Set up periodic checks
     const intervalId = setInterval(checkAuth, 180000); // Check every 3 minutes
 
+    // Clean up timers
     return () => {
       if (authTimer) clearTimeout(authTimer);
       if (premiumTimer) clearTimeout(premiumTimer);
       clearInterval(intervalId);
     };
-  }, [isV6Page]);
+  }, [isV6Page, isAuthModalOpen, isPremiumModalOpen]);
 
   const handleCloseAuthModal = () => {
+    // Only allow closing auth modal on non-v6 pages
     if (!isV6Page) {
       setIsAuthModalOpen(false);
     }

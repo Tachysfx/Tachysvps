@@ -65,7 +65,6 @@ export default function Profile() {
       setIsEditable(true);
     } catch (error) {
       console.error("Error parsing session data:", error);
-      toast.error("Invalid session data. All fields are read-only.");
       setIsEditable(false);
     }
   }, []);
@@ -192,7 +191,7 @@ export default function Profile() {
       if (auth.currentUser) {
         await sendEmailVerification(auth.currentUser);
 
-        // Log email verification activity
+        // Log email verification activity and update verification status
         const userRef = doc(db, "users", auth.currentUser.uid);
         const userDoc = await getDoc(userRef);
         const currentActivities = userDoc.data()?.activities1 || [];
@@ -203,8 +202,10 @@ export default function Profile() {
           details: "Verification email sent"
         };
 
+        // Update both activities and verification status
         await updateDoc(userRef, {
-          activities1: [verificationActivity, ...currentActivities].slice(0, 5)
+          activities1: [verificationActivity, ...currentActivities].slice(0, 5),
+          verification: true  // Add this line to update verification status
         });
 
         await Swal.fire({
