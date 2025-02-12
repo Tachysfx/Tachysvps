@@ -49,6 +49,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import React from 'react';
 
 ChartJS.register(
   CategoryScale,
@@ -100,6 +101,12 @@ interface EditFormValues {
   images: File[];
 }
 
+// Add this helper function at the top level
+const getSessionUser = () => {
+  const userStr = sessionStorage.getItem('user');
+  return userStr ? JSON.parse(userStr) : null;
+};
+
 export default function PostsDashboard() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -137,9 +144,9 @@ export default function PostsDashboard() {
   }, []);
 
   const loadHiddenPosts = () => {
-    const user = auth.currentUser;
-    if (user) {
-      const hidden = localStorage.getItem(`hiddenPosts_${user.uid}`);
+    const sessionUser = getSessionUser();
+    if (sessionUser) {
+      const hidden = localStorage.getItem(`hiddenPosts_${sessionUser.uid}`);
       if (hidden) {
         setHiddenPosts(JSON.parse(hidden));
       }
@@ -166,8 +173,8 @@ export default function PostsDashboard() {
 
   const fetchPosts = async () => {
     try {
-      const user = auth.currentUser;
-      if (!user) {
+      const sessionUser = getSessionUser();
+      if (!sessionUser) {
         toast.error('Please login to view your posts');
         return;
       }
@@ -178,7 +185,7 @@ export default function PostsDashboard() {
         const postsRef = collection(db, 'posts');
         const q = query(
           postsRef,
-          where('authorId', '==', user.uid),
+          where('authorId', '==', sessionUser.uid),
           orderBy('createdAt', 'desc')
         );
         const querySnapshot = await getDocs(q);
@@ -316,8 +323,8 @@ export default function PostsDashboard() {
 
   const handleCreatePost = async () => {
     try {
-      const user = auth.currentUser;
-      if (!user) {
+      const sessionUser = getSessionUser();
+      if (!sessionUser) {
         toast.error('Please login to create a post');
         return;
       }
@@ -346,7 +353,7 @@ export default function PostsDashboard() {
 
       await addDoc(collection(db, 'posts'), {
         content: newPostContent,
-        authorId: user.uid,
+        authorId: sessionUser.uid,
         author: {
           name: userProfile.name,
           avatar: userProfile.avatar
@@ -394,8 +401,8 @@ export default function PostsDashboard() {
 
   const handleReport = async (postId: string) => {
     try {
-      const user = auth.currentUser;
-      if (!user) {
+      const sessionUser = getSessionUser();
+      if (!sessionUser) {
         toast.error('Please login to report posts');
         return;
       }
@@ -405,7 +412,7 @@ export default function PostsDashboard() {
       setHiddenPosts(updatedHiddenPosts);
       
       // Save to localStorage
-      localStorage.setItem(`hiddenPosts_${user.uid}`, JSON.stringify(updatedHiddenPosts));
+      localStorage.setItem(`hiddenPosts_${sessionUser.uid}`, JSON.stringify(updatedHiddenPosts));
 
       // Add report to Firestore
       const postRef = doc(db, 'posts', postId);
@@ -413,7 +420,7 @@ export default function PostsDashboard() {
       const post = postDoc.data() as Post;
 
       // Check if user has already reported
-      if (post.reportedBy?.includes(user.uid)) {
+      if (post.reportedBy?.includes(sessionUser.uid)) {
         toast.info('You have already reported this post');
         return;
       }
@@ -421,7 +428,7 @@ export default function PostsDashboard() {
       // Update report count and add user to reportedBy array
       await updateDoc(postRef, {
         reports: increment(1),
-        reportedBy: arrayUnion(user.uid)
+        reportedBy: arrayUnion(sessionUser.uid)
       });
 
       toast.success('Post has been reported and hidden from your feed');
@@ -434,8 +441,8 @@ export default function PostsDashboard() {
 
   const handleShare = async (postId: string) => {
     try {
-      const user = auth.currentUser;
-      if (!user) {
+      const sessionUser = getSessionUser();
+      if (!sessionUser) {
         toast.error('Please login to share posts');
         return;
       }
@@ -445,7 +452,7 @@ export default function PostsDashboard() {
       const post = postDoc.data() as Post;
 
       // Check if user has already shared
-      if (post.sharedBy?.includes(user.uid)) {
+      if (post.sharedBy?.includes(sessionUser.uid)) {
         toast.info('You have already shared this post');
         return;
       }
@@ -453,7 +460,7 @@ export default function PostsDashboard() {
       // Update share count and add user to sharedBy array
       await updateDoc(postRef, {
         shares: increment(1),
-        sharedBy: arrayUnion(user.uid)
+        sharedBy: arrayUnion(sessionUser.uid)
       });
 
       logAnalyticsEvent('post_shared', { postId });
@@ -735,6 +742,16 @@ const PostCard = ({ post, onRefresh }: {
   const [editImages, setEditImages] = useState<File[]>([]);
   const router = useRouter();
 
+  // Add this helper function to format content
+  const formatContent = (content: string) => {
+    return content.split('\n').map((line, index) => (
+      <React.Fragment key={index}>
+        {line}
+        <br />
+      </React.Fragment>
+    ));
+  };
+
   const handleEdit = async () => {
     const result: SweetAlertResult<EditFormValues> = await Swal.fire({
       title: 'Edit Post',
@@ -989,7 +1006,9 @@ const PostCard = ({ post, onRefresh }: {
                 {post.createdAt?.toDate?.() ? post.createdAt.toDate().toLocaleDateString() : new Date().toLocaleDateString()}
               </p>
             </div>
-            <p className="text-gray-800 break-words line-clamp-2">{post.content}</p>
+            <div className="text-gray-800 break-words whitespace-pre-line">
+              {formatContent(post.content)}
+            </div>
             <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
               <span className="flex items-center gap-1">
                 <ThumbsUp size={16} />

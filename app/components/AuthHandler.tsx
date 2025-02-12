@@ -10,6 +10,14 @@ import { Role } from "../types/index";
 let isHandlerMounted = false;
 
 const AuthHandler = () => {
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
+  const pathname = usePathname();
+  
+  // Check if current page is sign-in page or v6 page
+  const isSignInPage = pathname === '/sign_in';
+  const isV6Page = pathname?.startsWith('/v6');
+
   // Instance check
   useEffect(() => {
     if (isHandlerMounted) {
@@ -22,25 +30,25 @@ const AuthHandler = () => {
     };
   }, []);
 
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
-  const pathname = usePathname();
-  const isV6Page = pathname?.startsWith('/v6');
-
   // Listen for manual auth modal triggers
   useEffect(() => {
     const handleOpenAuthModal = () => {
-      setIsAuthModalOpen(true);
+      if (!isSignInPage) {
+        setIsAuthModalOpen(true);
+      }
     };
 
     window.addEventListener('openAuthModal', handleOpenAuthModal);
     return () => {
       window.removeEventListener('openAuthModal', handleOpenAuthModal);
     };
-  }, []);
+  }, [isSignInPage]);
 
   // Main auth check logic
   useEffect(() => {
+    // Don't run checks on sign-in page
+    if (isSignInPage) return;
+
     let authTimer: NodeJS.Timeout;
     let premiumTimer: NodeJS.Timeout;
 
@@ -49,24 +57,19 @@ const AuthHandler = () => {
       const user = userSession ? JSON.parse(userSession) : null;
       
       if (!user) {
-        // Show auth modal immediately for v6 pages or after delay for normal pages
         if (isV6Page) {
           setIsAuthModalOpen(true);
         } else {
-          // Only set timer if modal isn't already open
           if (!isAuthModalOpen) {
             authTimer = setTimeout(() => setIsAuthModalOpen(true), 180000);
           }
         }
       } else {
-        // User is logged in
         setIsAuthModalOpen(false);
         
-        // Check for premium membership
-        if (user.role === Role.Normal) {
-          // Only set premium timer if modal isn't already open
+        if (user.role === Role.Normal && !isSignInPage) {
           if (!isPremiumModalOpen) {
-            premiumTimer = setTimeout(() => setIsPremiumModalOpen(true), 90000);
+            premiumTimer = setTimeout(() => setIsPremiumModalOpen(true), 180000);
           }
         }
       }
@@ -76,7 +79,7 @@ const AuthHandler = () => {
     checkAuth();
 
     // Set up periodic checks
-    const intervalId = setInterval(checkAuth, 180000); // Check every 3 minutes
+    const intervalId = setInterval(checkAuth, 300000);
 
     // Clean up timers
     return () => {
@@ -84,10 +87,9 @@ const AuthHandler = () => {
       if (premiumTimer) clearTimeout(premiumTimer);
       clearInterval(intervalId);
     };
-  }, [isV6Page, isAuthModalOpen, isPremiumModalOpen]);
+  }, [isV6Page, isAuthModalOpen, isPremiumModalOpen, isSignInPage]);
 
   const handleCloseAuthModal = () => {
-    // Only allow closing auth modal on non-v6 pages
     if (!isV6Page) {
       setIsAuthModalOpen(false);
     }
@@ -96,6 +98,9 @@ const AuthHandler = () => {
   const handleClosePremiumModal = () => {
     setIsPremiumModalOpen(false);
   };
+
+  // Don't render modals on sign-in page
+  if (isSignInPage) return null;
 
   return (
     <>

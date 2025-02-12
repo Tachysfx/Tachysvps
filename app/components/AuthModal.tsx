@@ -12,7 +12,8 @@ import { toast } from "react-toastify";
 import Swal from 'sweetalert2';
 import { githubAuthProvider } from "../functions/firebase";
 import { Role, User } from "../types/index"
-import { LogIn, UserPlus, KeyRound, ArrowRight } from 'lucide-react';
+import { LogIn, UserPlus, KeyRound, ArrowRight, AlertCircle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 // Bind modal to your appElement for accessibility
 if (typeof window !== 'undefined') {
@@ -67,6 +68,7 @@ export default function AuthModal({ isOpen, onRequestClose, disableBackgroundClo
   const [password, setPassword] = useState("");
   const [formType, setFormType] = useState("signUp");
   const [modalIsOpen, setModalIsOpen] = useState(isOpen);
+  const router = useRouter();
 
   // Add this useEffect to handle external isOpen changes
   useEffect(() => {
@@ -600,62 +602,45 @@ export default function AuthModal({ isOpen, onRequestClose, disableBackgroundClo
     onRequestClose();
   };
 
+  const handleRedirectToSignIn = () => {
+    router.push('/sign_in');
+    onRequestClose();
+  };
+
   return (
     <Modal
       isOpen={modalIsOpen}
       onRequestClose={disableBackgroundClose ? () => {} : handleCloseModal}
       shouldCloseOnOverlayClick={!disableBackgroundClose}
       style={customStyles}
-      contentLabel="Authentication Modal"
+      contentLabel="Authentication Required"
     >
       <div className="relative">
-        {/* Beautiful top border gradient */}
+        {/* Top gradient border */}
         <div className="absolute -top-2 -left-2 -right-2 h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-purple-600 rounded-full"></div>
         
-        <div className="px-2 pt-4">
-          <div className="text-center mb-6">
-            <h3 className="text-2xl font-bold text-gray-900">
-              {formType === "signUp" ? "Create your account" : formType === "login" ? "Welcome back" : "Reset Password"}
-            </h3>
-          </div>
-          
-          {renderForm()}
-          
-          <div className="mt-8 relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-gray-500">Or continue with</span>
+        <div className="text-center px-4 py-6">
+          <div className="mb-4 flex justify-center">
+            <div className="p-3 bg-purple-100 rounded-full">
+              <AlertCircle className="w-8 h-8 text-purple-600" />
             </div>
           </div>
+          
+          <h3 className="text-xl font-bold text-gray-900 mb-2">
+            Authentication Required
+          </h3>
+          
+          <p className="text-gray-600 mb-6">
+            Please sign in or create an account to access this feature
+          </p>
 
-          <div className="mt-6 flex justify-center gap-4">
-            <button
-              onClick={signInGoogle}
-              className="flex items-center justify-center p-2.5 border border-gray-300 rounded-xl hover:bg-gray-50 transition-all duration-200"
-            >
-              <Image
-                src={imgGoogle}
-                width={24}
-                height={24}
-                alt="Sign in with Google"
-                className="w-5 h-5"
-              />
-            </button>
-            <button
-              className="flex items-center justify-center p-2.5 border border-gray-300 rounded-xl hover:bg-gray-50 transition-all duration-200"
-              onClick={signInGitHub}
-            >
-              <Image
-                src={imgGit}
-                width={24}
-                height={24}
-                alt="Sign in with GitHub"
-                className="w-5 h-5"
-              />
-            </button>
-          </div>
+          <button
+            onClick={handleRedirectToSignIn}
+            className="w-full py-2.5 px-4 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200 font-medium flex items-center justify-center gap-2"
+          >
+            <LogIn className="w-4 h-4" />
+            Go to Sign In
+          </button>
         </div>
       </div>
     </Modal>
