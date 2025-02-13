@@ -33,8 +33,17 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app); // Initialize Firebase Storage
 const realtimeDb = getDatabase(app); // Initialize Realtime Database
+
+// Configure providers with custom parameters
 const googleAuthProvider = new GoogleAuthProvider();
+googleAuthProvider.setCustomParameters({
+  prompt: 'select_account'
+});
+
 const githubAuthProvider = new GithubAuthProvider();
+githubAuthProvider.setCustomParameters({
+  prompt: 'consent'
+});
 
 // Analytics helper function
 const logAnalyticsEvent = (eventName: string, eventParams?: object) => {

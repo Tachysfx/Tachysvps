@@ -24,7 +24,9 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
   signInWithPopup,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  browserLocalPersistence,
+  setPersistence
 } from 'firebase/auth';
 import { auth, db, googleAuthProvider, githubAuthProvider, logAnalyticsEvent, realtimeDb } from '../functions/firebase';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
@@ -299,6 +301,16 @@ export default function SignInPage() {
   const signInGoogle = async () => {
     setIsLoading(true);
     try {
+      // First check if popups are blocked
+      const popupBlocked = await checkIfPopupBlocked();
+      if (popupBlocked) {
+        toast.error("Please allow popups for this site to use social login");
+        return;
+      }
+
+      // Configure auth persistence
+      await setPersistence(auth, browserLocalPersistence);
+      
       const res = await signInWithPopup(auth, googleAuthProvider);
       const user = res.user;
 
@@ -354,7 +366,16 @@ export default function SignInPage() {
 
       await handleSuccessfulAuth();
     } catch (err: any) {
-      if (err.code !== "auth/popup-closed-by-user") {
+      console.error("Google sign in error:", err);
+      if (err.code === "auth/popup-closed-by-user") {
+        // User closed the popup - no need to show error
+        return;
+      } else if (err.code === "auth/popup-blocked") {
+        toast.error("Please allow popups for this site to use Google login");
+      } else if (err.code === "auth/cancelled-popup-request") {
+        // Another popup is already open - no need to show error
+        return;
+      } else {
         toast.error("Failed to sign in with Google. Please try again.");
       }
     } finally {
@@ -365,6 +386,16 @@ export default function SignInPage() {
   const signInGitHub = async () => {
     setIsLoading(true);
     try {
+      // First check if popups are blocked
+      const popupBlocked = await checkIfPopupBlocked();
+      if (popupBlocked) {
+        toast.error("Please allow popups for this site to use social login");
+        return;
+      }
+
+      // Configure auth persistence
+      await setPersistence(auth, browserLocalPersistence);
+      
       const res = await signInWithPopup(auth, githubAuthProvider);
       const user = res.user;
 
@@ -420,11 +451,34 @@ export default function SignInPage() {
 
       await handleSuccessfulAuth();
     } catch (err: any) {
-      if (err.code !== "auth/popup-closed-by-user") {
+      console.error("GitHub sign in error:", err);
+      if (err.code === "auth/popup-closed-by-user") {
+        // User closed the popup - no need to show error
+        return;
+      } else if (err.code === "auth/popup-blocked") {
+        toast.error("Please allow popups for this site to use GitHub login");
+      } else if (err.code === "auth/cancelled-popup-request") {
+        // Another popup is already open - no need to show error
+        return;
+      } else {
         toast.error("Failed to sign in with GitHub. Please try again.");
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Add this helper function to check if popups are blocked
+  const checkIfPopupBlocked = async () => {
+    try {
+      const popup = window.open('about:blank', 'popup_test', 'width=1,height=1');
+      if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+        return true;
+      }
+      popup.close();
+      return false;
+    } catch (e) {
+      return true;
     }
   };
 
