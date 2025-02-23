@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../../functions/firebase';
 
 // Replace these with your actual Payoneer API credentials
 const PAYONEER_API_KEY = process.env.PAYONEER_API_KEY;
@@ -18,6 +20,8 @@ interface PaymentRequest {
     algoName?: string;
     vpsOrderId?: string;
     membershipId?: string;
+    membershipDuration?: number;
+    membershipExpiry?: string;
   };
 }
 
@@ -58,6 +62,17 @@ export async function POST(request: Request) {
       }
 
       const paymentData = await paymentResponse.json();
+
+      if (body.type === 'payment' && body.metadata?.membershipId) {
+        // Store the membership details in Firestore
+        const userDoc = doc(db, 'users', body.customerEmail);
+        await updateDoc(userDoc, {
+          role: 'Premium',
+          premiumExpiration: body.metadata.membershipExpiry,
+          membershipId: body.metadata.membershipId
+        });
+      }
+
       return NextResponse.json({
         success: true,
         paymentUrl: paymentData.redirect_url,

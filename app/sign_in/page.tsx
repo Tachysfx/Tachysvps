@@ -23,10 +23,13 @@ import { toast } from 'react-toastify';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   sendPasswordResetEmail,
   browserLocalPersistence,
-  setPersistence
+  setPersistence,
+  GoogleAuthProvider,
+  GithubAuthProvider
 } from 'firebase/auth';
 import { auth, db, googleAuthProvider, githubAuthProvider, logAnalyticsEvent, realtimeDb } from '../functions/firebase';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
@@ -298,187 +301,139 @@ export default function SignInPage() {
     }
   };
 
+  // Modify the useEffect that handles redirect results
+  useEffect(() => {
+    const handleRedirectResult = async () => {
+      console.log("Starting handleRedirectResult");
+      try {
+        const result = await getRedirectResult(auth);
+        console.log("Redirect result:", result);
+        
+        if (result && result.user) {
+          const user = result.user;
+          console.log("User from redirect:", user);
+          
+          const userRef = doc(db, "users", user.uid);
+          const userDoc = await getDoc(userRef);
+          const location = await getUserLocation();
+
+          // Determine the provider
+          const provider = result.providerId === 'github.com' ? 'GitHub' : 
+                          result.providerId === 'google.com' ? 'Google' : 
+                          'OAuth';
+
+          if (!userDoc.exists()) {
+            console.log("Creating new user document");
+            const signUpActivity = {
+              action: "Account Creation",
+              date: new Date().toISOString(),
+              details: `New account created with ${provider}`
+            };
+
+            // Create new user document
+            await setDoc(userRef, {
+              email: user.email,
+              name: user.displayName,
+              photoURL: user.photoURL,
+              verification: user.emailVerified,
+              createdAt: new Date().toISOString(),
+              location: location,
+              activities1: [signUpActivity],
+              role: Role.Normal,
+              lastLogin: new Date().toISOString()
+            });
+          } else {
+            console.log("Updating existing user document");
+            const loginActivity = {
+              action: "Login",
+              date: new Date().toISOString(),
+              details: `Login with ${provider}`
+            };
+
+            const currentActivities = userDoc.data()?.activities1 || [];
+            await updateDoc(userRef, {
+              lastLogin: new Date().toISOString(),
+              location: location,
+              activities1: [loginActivity, ...currentActivities].slice(0, 5)
+            });
+          }
+
+          // Store user data in sessionStorage
+          const role = await checkAndUpdateUserRole(userRef);
+          const userData = {
+            uid: user.uid,
+            email: user.email,
+            verification: user.emailVerified,
+            role: role
+          };
+          console.log("Setting session storage with:", userData);
+          sessionStorage.setItem("user", JSON.stringify(userData));
+
+          // Update active status
+          await updateActiveStatus(user.uid, user.email!, user.displayName);
+
+          // Log analytics event
+          logAnalyticsEvent('login', { 
+            method: provider.toLowerCase()
+          });
+
+          // Show success message and redirect
+          await Swal.fire({
+            icon: 'success',
+            title: 'Welcome!',
+            text: `Successfully signed in with ${provider}`,
+            confirmButtonColor: '#7A49B7',
+            timer: 1500,
+            timerProgressBar: true,
+            showConfirmButton: false
+          });
+
+          // Redirect to previous path or home
+          window.location.href = previousPath || '/';
+        }
+      } catch (error) {
+        console.error("Detailed error in handleRedirectResult:", {
+          error,
+          message: error.message,
+          code: error.code,
+          stack: error.stack
+        });
+        toast.error(`Authentication failed: ${error.message}`);
+      }
+    };
+
+    // Call handleRedirectResult when component mounts
+    handleRedirectResult();
+  }, []); // Empty dependency array to run only once on mount
+
+  // Modify the Google sign in function
   const signInGoogle = async () => {
     setIsLoading(true);
     try {
-      // First check if popups are blocked
-      const popupBlocked = await checkIfPopupBlocked();
-      if (popupBlocked) {
-        toast.error("Please allow popups for this site to use social login");
-        return;
-      }
-
-      // Configure auth persistence
       await setPersistence(auth, browserLocalPersistence);
-      
-      const res = await signInWithPopup(auth, googleAuthProvider);
-      const user = res.user;
-
-      const userRef = doc(db, "users", user.uid);
-      const userDoc = await getDoc(userRef);
-      const location = await getUserLocation();
-
-      if (!userDoc.exists()) {
-        const signUpActivity = {
-          action: "Account Creation",
-          date: new Date().toISOString(),
-          details: "New account created with Google"
-        };
-
-        await setDoc(userRef, {
-          email: user.email,
-          name: user.displayName,
-          photoURL: user.photoURL,
-          verification: user.emailVerified,
-          createdAt: new Date().toISOString(),
-          location: location,
-          activities1: [signUpActivity],
-          role: Role.Normal
-        });
-      } else {
-        const loginActivity = {
-          action: "Login",
-          date: new Date().toISOString(),
-          details: "Login with Google"
-        };
-
-        await updateDoc(userRef, {
-          lastLogin: new Date().toISOString(),
-          location: location,
-          activities1: [loginActivity, ...(userDoc.data()?.activities1 || [])].slice(0, 5)
-        });
-      }
-
-      sessionStorage.setItem(
-        "user",
-        JSON.stringify({
-          uid: user.uid,
-          email: user.email,
-          verification: user.emailVerified,
-          role: await checkAndUpdateUserRole(userRef)
-        })
-      );
-
-      logAnalyticsEvent('login', { method: 'google' });
-
-      // Add active status update
-      await updateActiveStatus(user.uid, user.email!, user.displayName);
-
-      await handleSuccessfulAuth();
-    } catch (err: any) {
+      const provider = new GoogleAuthProvider();
+      provider.addScope('email');
+      provider.addScope('profile');
+      await signInWithRedirect(auth, provider);
+    } catch (err) {
       console.error("Google sign in error:", err);
-      if (err.code === "auth/popup-closed-by-user") {
-        // User closed the popup - no need to show error
-        return;
-      } else if (err.code === "auth/popup-blocked") {
-        toast.error("Please allow popups for this site to use Google login");
-      } else if (err.code === "auth/cancelled-popup-request") {
-        // Another popup is already open - no need to show error
-        return;
-      } else {
-        toast.error("Failed to sign in with Google. Please try again.");
-      }
-    } finally {
+      toast.error("Failed to sign in with Google. Please try again.");
       setIsLoading(false);
     }
   };
 
+  // Modify the GitHub sign in function
   const signInGitHub = async () => {
     setIsLoading(true);
     try {
-      // First check if popups are blocked
-      const popupBlocked = await checkIfPopupBlocked();
-      if (popupBlocked) {
-        toast.error("Please allow popups for this site to use social login");
-        return;
-      }
-
-      // Configure auth persistence
       await setPersistence(auth, browserLocalPersistence);
-      
-      const res = await signInWithPopup(auth, githubAuthProvider);
-      const user = res.user;
-
-      const userRef = doc(db, "users", user.uid);
-      const userDoc = await getDoc(userRef);
-      const location = await getUserLocation();
-
-      if (!userDoc.exists()) {
-        const signUpActivity = {
-          action: "Account Creation",
-          date: new Date().toISOString(),
-          details: "New account created with GitHub"
-        };
-
-        await setDoc(userRef, {
-          email: user.email,
-          name: user.displayName,
-          photoURL: user.photoURL,
-          verification: user.emailVerified,
-          createdAt: new Date().toISOString(),
-          location: location,
-          activities1: [signUpActivity],
-          role: Role.Normal
-        });
-      } else {
-        const loginActivity = {
-          action: "Login",
-          date: new Date().toISOString(),
-          details: "Login with GitHub"
-        };
-
-        await updateDoc(userRef, {
-          lastLogin: new Date().toISOString(),
-          location: location,
-          activities1: [loginActivity, ...(userDoc.data()?.activities1 || [])].slice(0, 5)
-        });
-      }
-
-      sessionStorage.setItem(
-        "user",
-        JSON.stringify({
-          uid: user.uid,
-          email: user.email,
-          verification: user.emailVerified,
-          role: await checkAndUpdateUserRole(userRef)
-        })
-      );
-
-      logAnalyticsEvent('login', { method: 'github' });
-
-      // Add active status update
-      await updateActiveStatus(user.uid, user.email!, user.displayName);
-
-      await handleSuccessfulAuth();
-    } catch (err: any) {
+      const provider = new GithubAuthProvider();
+      provider.addScope('user:email');
+      await signInWithRedirect(auth, provider);
+    } catch (err) {
       console.error("GitHub sign in error:", err);
-      if (err.code === "auth/popup-closed-by-user") {
-        // User closed the popup - no need to show error
-        return;
-      } else if (err.code === "auth/popup-blocked") {
-        toast.error("Please allow popups for this site to use GitHub login");
-      } else if (err.code === "auth/cancelled-popup-request") {
-        // Another popup is already open - no need to show error
-        return;
-      } else {
-        toast.error("Failed to sign in with GitHub. Please try again.");
-      }
-    } finally {
+      toast.error("Failed to sign in with GitHub. Please try again.");
       setIsLoading(false);
-    }
-  };
-
-  // Add this helper function to check if popups are blocked
-  const checkIfPopupBlocked = async () => {
-    try {
-      const popup = window.open('about:blank', 'popup_test', 'width=1,height=1');
-      if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-        return true;
-      }
-      popup.close();
-      return false;
-    } catch (e) {
-      return true;
     }
   };
 

@@ -5,6 +5,12 @@ import {
     Code, // for development
     Monitor, // for display/interface
     Bot, // for automation/robots
+    LineChart, // for forex & trading
+    Globe, // for web hosting
+    Gamepad2, // for game servers
+    Database, // for database hosting
+    Code2, // for development
+    MonitorSmartphone, // for remote desktop
   } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -22,16 +28,17 @@ export default function Others() {
             <div className = "mee row flex-lg-row-reverse align-items-center g-5">
               <div className = "col-10 col-sm-8 col-lg-4">
                 <Image
-                src="/dem.svg"
-                width={1200}
-                height={1000}
-                alt="blur"
-                className="d-block mx-lg-auto img-fluid scale-x-[-1]"
+                  src="/dem.svg"
+                  width={1200}
+                  height={1000}
+                  alt="blur"
+                  className="d-block mx-auto img-fluid scale-x-[-1] max-w-[80%] lg:max-w-full"
+                  priority
                 />
               </div>
               <div className = "col-lg-8">
-                <h1 className = " mb-3">Power Your Forex Trading with <span className='text-purple'>Tachys VPS</span></h1>
-                <p className="fs-5 fw-light">Enjoy lightning-fast, reliable vps hosting designed specifically for Forex traders.</p>
+                <h1 className="mb-3">Power Your Online Operations with <span className="text-purple">Tachys VPS</span></h1>
+                <p className="fs-5 fw-light">Experience lightning-fast, reliable VPS hosting for trading, development, business, and more.</p>
                 <div className = "text-center">
                   <Link href= {pricing} type="button" className="btn btn-purple px-4 mx-2 mb-2">Launch VPS</Link>
                   <Link href= {market} type="button" className="btn btn-outline-purple px-4 mx-2 mb-2">Visit Algo Market</Link>
@@ -58,36 +65,154 @@ export default function Others() {
                     className="mx-auto mb-4"
                   />
                   <p className="text-muted mb-4 px-4">
-                    Tachys VPS minimizes slippage, prevents downtime losses, and ensures fast execution while offering thousands of free trading bots, algos and EAs in our Algo Market to boost your strategies
+                    Tachys VPS keeps your operations running 24/7 with ultra-low latency, high uptime, and powerful automation. Whether you're trading, hosting, or building something unique, our robust infrastructure saves you money by eliminating costly downtime and inefficiencies.
                   </p>
                   <div className="d-grid gap-2 d-sm-flex justify-content-sm-center">
                     <Link 
-                      href={market} 
+                      href="/plans/basic" 
                       className="btn btn-purple px-5 py-3 fw-semibold shadow-sm hover:shadow-lg transition-shadow duration-300"
                     >
-                      Explore Algo Market
+                      Buy Now
                     </Link>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-  
-          <div className="features-section my-5">
+
+          <div className="versatility-section py-8 py-lg-12 bg-gradient-to-b from-purple-50 to-white">
             <div className="container">
+              <div className="text-center mb-6 mb-lg-8 px-3">
+                <span className="text-purple-600 text-sm font-semibold tracking-wider uppercase mb-2 d-block">
+                  Multipurpose Solutions
+                </span>
+                <h2 className="display-6 fw-bold mb-3">One Platform, <span className="text-purple">Endless Possibilities</span></h2>
+                <p className="text-muted mx-auto" style={{ maxWidth: "600px" }}>
+                  Tachys VPS powers your applications with enterprise-grade infrastructure, whether you're a developer, gamer, trader, or business owner.
+                </p>
+              </div>
+
+              <div className="row g-4">
+                <div className="col-lg-4">
+                  <div className="card h-100 border-0 bg-purple text-white shadow-lg rounded-4 p-3 p-lg-4">
+                    <div className="card-body">
+                      <h3 className="h4 mb-3">Why Choose Us?</h3>
+                      <ul className="list-unstyled mb-4">
+                        <li className="mb-2 d-flex align-items-center">
+                          <Check className="me-2 h-5 w-5" /> 99.99% Uptime
+                        </li>
+                        <li className="mb-2 d-flex align-items-center">
+                          <Check className="me-2 h-5 w-5" /> Global Network
+                        </li>
+                        <li className="mb-2 d-flex align-items-center">
+                          <Check className="me-2 h-5 w-5" /> 24/7 Support
+                        </li>
+                      </ul>
+                      <Link href={pricing} className="btn btn-light btn-sm px-4">
+                        Get Started
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="col-lg-8">
+                  <div className="row g-3 g-lg-4">
+                    <div className="col-6 col-md-4">
+                      <div className="card h-100 border-0 shadow-sm hover:shadow-md transition-all duration-300 rounded-4 p-2 p-lg-3">
+                        <div className="d-flex align-items-center mb-2">
+                          <div className="p-2 bg-purple-100 rounded-circle me-2">
+                            <Globe className="text-purple h-5 w-5" />
+                          </div>
+                          <h4 className="h6 fw-bold mb-0">Web Hosting</h4>
+                        </div>
+                        <p className="text-muted small mb-0">Host websites with exceptional performance.</p>
+                      </div>
+                    </div>
+                    <div className="col-6 col-md-4">
+                      <div className="card h-100 border-0 shadow-sm hover:shadow-md transition-all duration-300 rounded-4 p-2 p-lg-3">
+                        <div className="d-flex align-items-center mb-2">
+                          <div className="p-2 bg-purple-100 rounded-circle me-2">
+                            <LineChart className="text-purple h-5 w-5" />
+                          </div>
+                          <h4 className="h6 fw-bold mb-0">Trading</h4>
+                        </div>
+                        <p className="text-muted small mb-0">Ultra-low latency trade execution.</p>
+                      </div>
+                    </div>
+                    <div className="col-6 col-md-4">
+                      <div className="card h-100 border-0 shadow-sm hover:shadow-md transition-all duration-300 rounded-4 p-2 p-lg-3">
+                        <div className="d-flex align-items-center mb-2">
+                          <div className="p-2 bg-purple-100 rounded-circle me-2">
+                            <Gamepad2 className="text-purple h-5 w-5" />
+                          </div>
+                          <h4 className="h6 fw-bold mb-0">Game Servers</h4>
+                        </div>
+                        <p className="text-muted small mb-0">Low-latency gaming experience.</p>
+                      </div>
+                    </div>
+                    <div className="col-6 col-md-4">
+                      <div className="card h-100 border-0 shadow-sm hover:shadow-md transition-all duration-300 rounded-4 p-2 p-lg-3">
+                        <div className="d-flex align-items-center mb-2">
+                          <div className="p-2 bg-purple-100 rounded-circle me-2">
+                            <Database className="text-purple h-5 w-5" />
+                          </div>
+                          <h4 className="h6 fw-bold mb-0">Databases</h4>
+                        </div>
+                        <p className="text-muted small mb-0">Secure database hosting solutions.</p>
+                      </div>
+                    </div>
+                    <div className="col-6 col-md-4">
+                      <div className="card h-100 border-0 shadow-sm hover:shadow-md transition-all duration-300 rounded-4 p-2 p-lg-3">
+                        <div className="d-flex align-items-center mb-2">
+                          <div className="p-2 bg-purple-100 rounded-circle me-2">
+                            <Code2 className="text-purple h-5 w-5" />
+                          </div>
+                          <h4 className="h6 fw-bold mb-0">Development</h4>
+                        </div>
+                        <p className="text-muted small mb-0">Perfect dev & test environments.</p>
+                      </div>
+                    </div>
+                    <div className="col-6 col-md-4">
+                      <div className="card h-100 border-0 shadow-sm hover:shadow-md transition-all duration-300 rounded-4 p-2 p-lg-3">
+                        <div className="d-flex align-items-center mb-2">
+                          <div className="p-2 bg-purple-100 rounded-circle me-2">
+                            <Bot className="text-purple h-5 w-5" />
+                          </div>
+                          <h4 className="h6 fw-bold mb-0">Automation</h4>
+                        </div>
+                        <p className="text-muted small mb-0">Reliable automated operations.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-center mt-8">
+                <Link href={pricing} className="btn btn-purple px-4 me-2">
+                  Start Now
+                </Link>
+                <Link href={support} className="btn btn-outline-purple px-4">
+                  Contact Sales
+                </Link>
+              </div>
+            </div>
+          </div>
+  
+          <div className="features-section my-4 my-lg-5">
+            <div className="container px-3">
               <h3 className="text-center display-6 text-purple fw-bold mb-4">Why Choose Tachys VPS?</h3>
-              <div className="row">
-                <div className="col-md-4 mb-2">
-                  <div className="feature-card text-center p-4 rounded shadow-lg bg-white">
+              <div className="row g-3 g-lg-4">
+                <div className="col-md-6 col-lg-4">
+                  <div className="feature-card text-center p-3 p-lg-4 rounded shadow-lg bg-white h-100">
                     <div className="d-flex justify-content-center">
                       <CircleCheck className="text-purple h-12 w-12 mb-3" />
                     </div>
                     <h5 className="fw-bold">High Performance</h5>
-                    <p className="text-muted">Experience ultra-fast execution and minimal latency.</p>
+                    <p className="text-muted">Enjoy ultra-fast speeds, low latency, and reliable uptime.</p>
                   </div>
                 </div>
-                <div className="col-md-4 mb-2">
-                  <div className="feature-card text-center p-4 rounded shadow-lg bg-white">
+                <div className="col-md-6 col-lg-4">
+                  <div className="feature-card text-center p-3 p-lg-4 rounded shadow-lg bg-white h-100">
                     <div className="d-flex justify-content-center">
                       <CircleCheck className="text-purple h-12 w-12 mb-3" />
                     </div>
@@ -95,8 +220,8 @@ export default function Others() {
                     <p className="text-muted">Our team is here to assist you anytime, day or night.</p>
                   </div>
                 </div>
-                <div className="col-md-4 mb-2">
-                  <div className="feature-card text-center p-4 rounded shadow-lg bg-white">
+                <div className="col-md-6 col-lg-4">
+                  <div className="feature-card text-center p-3 p-lg-4 rounded shadow-lg bg-white h-100">
                     <div className="d-flex justify-content-center">
                       <CircleCheck className="text-purple h-12 w-12 mb-3" />
                     </div>
@@ -107,13 +232,115 @@ export default function Others() {
               </div>
             </div>
           </div>
+
+          <div className="container-fluid py-5" id="use-cases">
+            <div className="container">
+              <div className="text-center mb-2">
+                <h3 className="display-6 fw-bold text-purple mb-3">Perfect For Your Needs</h3>
+                <div className="w-50 mx-auto">
+                  <p className="text-muted">Discover how Tachys VPS can power your applications and services</p>
+                </div>
+              </div>
   
+              <div className="row g-4">
+                <div className="col-lg-4 col-md-6">
+                  <div className="card h-100 border-0 shadow-sm hover:shadow-lg transition-shadow rounded-4 p-4">
+                    <div className="d-flex align-items-center mb-4">
+                      <div className="p-3 bg-purple bg-opacity-10 rounded-circle me-3">
+                        <LineChart className="text-white w-8 h-8" />
+                      </div>
+                      <h3 className="h5 fw-bold mb-0">Forex & Trading</h3>
+                    </div>
+                    <div>
+                      <h5 className="text-purple mb-3 fs-6">24/7 Trading Operations</h5>
+                      <p className="text-muted mb-0">Run trading bots, algorithms, and platforms with ultra-low latency and reliable execution</p>
+                    </div>
+                  </div>
+                </div>
+  
+                <div className="col-lg-4 col-md-6">
+                  <div className="card h-100 border-0 shadow-sm hover:shadow-lg transition-shadow rounded-4 p-4">
+                    <div className="d-flex align-items-center mb-4">
+                      <div className="p-3 bg-purple bg-opacity-10 rounded-circle me-3">
+                        <Globe className="text-white w-8 h-8" />
+                      </div>
+                      <h3 className="h5 fw-bold mb-0">Web Hosting</h3>
+                    </div>
+                    <div>
+                      <h5 className="text-purple mb-3 fs-6">Powerful Web Applications</h5>
+                      <p className="text-muted mb-0">Host websites, web apps, and e-commerce platforms with exceptional performance</p>
+                    </div>
+                  </div>
+                </div>
+  
+                <div className="col-lg-4 col-md-6">
+                  <div className="card h-100 border-0 shadow-sm hover:shadow-lg transition-shadow rounded-4 p-4">
+                    <div className="d-flex align-items-center mb-4">
+                      <div className="p-3 bg-purple bg-opacity-10 rounded-circle me-3">
+                        <Gamepad2 className="text-white w-8 h-8" />
+                      </div>
+                      <h3 className="h5 fw-bold mb-0">Game Servers</h3>
+                    </div>
+                    <div>
+                      <h5 className="text-purple mb-3 fs-6">Low-Latency Gaming</h5>
+                      <p className="text-muted mb-0">Host multiplayer game servers with minimal lag and maximum uptime</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="col-lg-4 col-md-6">
+                  <div className="card h-100 border-0 shadow-sm hover:shadow-lg transition-shadow rounded-4 p-4">
+                    <div className="d-flex align-items-center mb-4">
+                      <div className="p-3 bg-purple bg-opacity-10 rounded-circle me-3">
+                        <Database className="text-white w-8 h-8" />
+                      </div>
+                      <h3 className="h5 fw-bold mb-0">Database Hosting</h3>
+                    </div>
+                    <div>
+                      <h5 className="text-purple mb-3 fs-6">Secure Data Management</h5>
+                      <p className="text-muted mb-0">Host databases with automated backups, high availability, and robust security</p>
+                    </div>
+                  </div>
+                </div>
+  
+                <div className="col-lg-4 col-md-6">
+                  <div className="card h-100 border-0 shadow-sm hover:shadow-lg transition-shadow rounded-4 p-4">
+                    <div className="d-flex align-items-center mb-4">
+                      <div className="p-3 bg-purple bg-opacity-10 rounded-circle me-3">
+                        <Code2 className="text-white w-8 h-8" />
+                      </div>
+                      <h3 className="h5 fw-bold mb-0">Development</h3>
+                    </div>
+                    <div>
+                      <h5 className="text-purple mb-3 fs-6">Dev & Testing Environment</h5>
+                      <p className="text-muted mb-0">Perfect for development, testing, and CI/CD pipeline deployment</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="col-lg-4 col-md-6">
+                  <div className="card h-100 border-0 shadow-sm hover:shadow-lg transition-shadow rounded-4 p-4">
+                    <div className="d-flex align-items-center mb-4">
+                      <div className="p-3 bg-purple bg-opacity-10 rounded-circle me-3">
+                        <MonitorSmartphone className="text-white w-8 h-8" />
+                      </div>
+                      <h3 className="h5 fw-bold mb-0">Remote Desktop</h3>
+                    </div>
+                    <div>
+                      <h5 className="text-purple mb-3 fs-6">Virtual Workspace</h5>
+                      <p className="text-muted mb-0">Access powerful computing resources from any device, anywhere</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="scrolling-container">
             <div className='text-center'>
               <h3 className='text-purple fw-bold display-6'>Compatible with the Trading Platforms You Love</h3>
             </div>
             <div className="scrolling-track">
-              {/* <!-- Add your images here --> */}
               <Image
                 src={mt4}
                 width={319}
@@ -150,7 +377,6 @@ export default function Others() {
                 className="mx-5"
               />
               <span className='mx-5'>.</span>
-              {/* <!-- Duplicate images for smooth looping --> */}
               <Image
                 src={mt4}
                 width={319}
@@ -194,10 +420,10 @@ export default function Others() {
               <div className="row align-items-center py-12 px-4">
                 <div className="col-lg-7 pe-lg-5">
                   <h3 className="display-6 fw-bold text-purple mb-4">
-                    Cloud Servers Built for Traders
+                    Cloud Servers Built for Optimal Performance
                   </h3>
                   <p className="text-muted text-gray-600 mb-5">
-                    Experience ultra-low latency and seamless trading with our enterprise-grade cloud infrastructure
+                    Experience ultra-low latency and seamless performance with our enterprise-grade cloud infrastructure.
                   </p>
   
                   <div className="row g-4 mb-5">
@@ -210,7 +436,7 @@ export default function Others() {
                         </div>
                         <div className="ms-4">
                           <h5 className="mb-2 fw-bold">Ultra-Fast Performance</h5>
-                          <p className="text-muted mb-0">1ms trade execution speed</p>
+                          <p className="text-muted mb-0">1ms execution speed</p>
                         </div>
                       </div>
   
@@ -301,7 +527,7 @@ export default function Others() {
                 <div className="service-item first-service">
                   <div className="icon"></div>
                   <h4 className="fw-bold">Low Latency</h4>
-                  <p className="fs-6">Faster trade execution means better profits. Our servers are close to trading hubs for lightning-quick response times.</p>
+                  <p className="fs-6">Enjoy lightning-fast response times with servers strategically located for optimal performance.</p>
                   <div className="text-button">
                     <Link className='text-purple fw-semibold' href={pricing}>Choose a plan</Link>
                   </div>
@@ -311,7 +537,7 @@ export default function Others() {
                 <div className="service-item second-service">
                   <div className="icon"></div>
                   <h4 className="fw-bold">High Uptime</h4>
-                  <p className="fs-6">Trade 24/7 without worry. Our VPS guarantees near-perfect uptime, so you never miss a trade.</p>
+                  <p className="fs-6">Stay online 24/7 with near-perfect uptime, ensuring uninterrupted performance for all your critical operations.</p>
                   <div className="text-button">
                     <Link className='text-purple fw-semibold' href={pricing}>Choose a plan</Link>
                   </div>
@@ -442,28 +668,27 @@ export default function Others() {
             </div>
           </div>
   
-          <div id="pricing" className="container">
+          <div id="pricing" className="container px-3 px-lg-4">
             <div className="row">
               <div className="col-lg-8 offset-lg-2">
                 <div className="section-heading text-center">
                   <h3 className="display-6 mb-4">
-                    We Have The Best <em className="text-purple fw-bold">Prices</em> You Can Get
+                      We Offer The Best <em className="text-purple fw-bold">Value</em> For Your Money
                   </h3>
-                  <Image
-                    src={heading}
-                    width={80}
-                    height={6}
-                    alt="Decorative heading underline"
-                    className="mx-auto mb-4"
+                  <Image  
+                      src={heading}  
+                      width={80}  
+                      height={6}  
+                      alt="Decorative heading underline"  
+                      className="mx-auto mb-4"  
                   />
                   <p className="text-muted">
-                    Affordable plans designed for traders — Tachys VPS offers top features at the lowest market rates.
+                      Powerful, feature-rich VPS plans at unbeatable prices—designed for businesses, developers, and traders alike.
                   </p>
                 </div>
               </div>
               <div className="row mt-4">
-                {/* Lite Plan */}
-                <div className="col-md-4 my-2">
+                <div className="col-md-6 col-lg-4 mb-3">
                   <div className="card h-100 rounded-4 shadow-sm border-2 hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
                     <div className="card-header py-4 bg-gradient-to-r from-purple-600 to-purple-800 border-0 rounded-top-4 text-center">
                       <h4 className="my-0 fw-normal text-white">Lite</h4>
@@ -503,8 +728,7 @@ export default function Others() {
                   </div>
                 </div>
   
-                {/* Basic Plan - Featured */}
-                <div className="col-md-4 my-2">
+                <div className="col-md-6 col-lg-4 mb-3">
                   <div className="card h-100 rounded-4 shadow-sm border-2 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 scale-105">
                     <div className="position-relative">
                       <div className="card-header py-4 bg-gradient-to-r from-purple-700 to-purple-900 border-0 rounded-top-4 text-center">
@@ -547,8 +771,7 @@ export default function Others() {
                   </div>
                 </div>
   
-                {/* Standard Plan */}
-                <div className="col-md-4 my-2">
+                <div className="col-md-6 col-lg-4 mb-3">
                   <div className="card h-100 rounded-4 shadow-sm border-2 hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
                     <div className="card-header py-4 bg-gradient-to-r from-purple-600 to-purple-800 border-0 rounded-top-4 text-center">
                       <h4 className="my-0 fw-normal text-white">Standard</h4>
@@ -588,8 +811,7 @@ export default function Others() {
                   </div>
                 </div>
   
-                {/* Ultra Plan */}
-                <div className="col-md-4 my-2">
+                <div className="col-md-6 col-lg-4 mt-3">
                   <div className="card h-100 rounded-4 shadow-sm border-2 hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
                     <div className="card-header py-4 bg-gradient-to-r from-purple-600 to-purple-800 border-0 rounded-top-4 text-center">
                       <h4 className="my-0 fw-normal text-white">Ultra</h4>
@@ -629,8 +851,7 @@ export default function Others() {
                   </div>
                 </div>
   
-                {/* Dedicated Server Plan */}
-                <div className="col-md-4 my-2">
+                <div className="col-md-6 col-lg-4 mt-3">
                   <div className="card h-100 rounded-4 shadow-sm border-2 hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
                     <div className="card-header py-4 bg-gradient-to-r from-purple-600 to-purple-800 border-0 rounded-top-4 text-center">
                       <h4 className="my-0 fw-normal text-white">Dedicated Server</h4>
@@ -670,8 +891,7 @@ export default function Others() {
                   </div>
                 </div>
   
-                {/* Custom Plan */}
-                <div className="col-md-4 my-2">
+                <div className="col-md-6 col-lg-4 mt-3">
                   <div className="card h-100 rounded-4 shadow-sm border-2 hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
                     <div className="card-header py-4 bg-gradient-to-r from-purple-600 to-purple-800 border-0 rounded-top-4 text-center">
                       <h4 className="my-0 fw-normal text-white">Custom</h4>
@@ -713,93 +933,17 @@ export default function Others() {
               </div>
             </div>
           </div>
-  
-          <div className="container-fluid py-5" id="use-cases">
-            <div className="container">
-              <div className="text-center mb-2">
-                <h3 className="display-6 fw-bold text-purple mb-3">Perfect For Your Trading Style</h3>
-                <div className="w-50 mx-auto">
-                  <p className="text-muted">Discover how Tachys VPS can enhance your trading experience</p>
-                </div>
-              </div>
-  
-              <div className="row g-4">
-                <div className="col-lg-3 col-md-6">
-                  <div className="card h-100 border-0 shadow-sm hover:shadow-lg transition-shadow rounded-4 p-4">
-                    <div className="d-flex align-items-center mb-4">
-                      <div className="p-3 bg-purple bg-opacity-10 rounded-circle me-3">
-                        <Bot className="text-white w-8 h-8" />
-                      </div>
-                      <h3 className="h5 fw-bold mb-0">Forex Automation</h3>
-                    </div>
-                    <div>
-                      <h5 className="text-purple mb-3 fs-6">Run Algos, Bots and EAs</h5>
-                      <p className="text-muted mb-0">Achieve 24/7 automated trading with ultra-reliable, low-latency servers for precise execution</p>
-                    </div>
-                  </div>
-                </div>
-  
-                <div className="col-lg-3 col-md-6">
-                  <div className="card h-100 border-0 shadow-sm hover:shadow-lg transition-shadow rounded-4 p-4">
-                    <div className="d-flex align-items-center mb-4">
-                      <div className="p-3 bg-purple bg-opacity-10 rounded-circle me-3">
-                        <Zap className="text-white w-8 h-8" />
-                      </div>
-                      <h3 className="h5 fw-bold mb-0">HFT Trading</h3>
-                    </div>
-                    <div>
-                      <h5 className="text-purple mb-3 fs-6">Lightning-Fast Execution</h5>
-                      <p className="text-muted mb-0">Tachys VPS ensures minimal slippage and ultra-low latency for time-sensitive trading strategies</p>
-                    </div>
-                  </div>
-                </div>
-  
-                <div className="col-lg-3 col-md-6">
-                  <div className="card h-100 border-0 shadow-sm hover:shadow-lg transition-shadow rounded-4 p-4">
-                    <div className="d-flex align-items-center mb-4">
-                      <div className="p-3 bg-purple bg-opacity-10 rounded-circle me-3">
-                        <Monitor className="text-white w-8 h-8" />
-                      </div>
-                      <h3 className="h5 fw-bold mb-0">Multi-Platform</h3>
-                    </div>
-                    <div>
-                      <h5 className="text-purple mb-3 fs-6">Trade Anywhere, Anytime</h5>
-                      <p className="text-muted mb-0">Access your trading platforms on any device with secure and uninterrupted connections</p>
-                    </div>
-                  </div>
-                </div>
-  
-                <div className="col-lg-3 col-md-6">
-                  <div className="card h-100 border-0 shadow-sm hover:shadow-lg transition-shadow rounded-4 p-4">
-                    <div className="d-flex align-items-center mb-4">
-                      <div className="p-3 bg-purple bg-opacity-10 rounded-circle me-3">
-                        <Code className="text-white w-8 h-8" />
-                      </div>
-                      <h3 className="h5 fw-bold mb-0">Algo Development</h3>
-                    </div>
-                    <div>
-                      <h5 className="text-purple mb-3 fs-6">Test & Deploy Strategies</h5>
-                      <p className="text-muted mb-0">Use our Algo Market to test, refine and deploy Forex algorithms effortlessly</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
             
-          <div id="testimonialsCarousel" className="carousel slide carousel-fade mb-5 py-5 rounded-4 pointer-event" data-bs-ride="carousel">
-            <div className="text-center mb-2">
+          <div id="testimonialsCarousel" className="carousel slide mb-5 py-4 py-lg-5 rounded-4">
+            <div className="text-center mb-4 px-3">
               <h3 className="display-6 mb-3 text-purple fw-bold">What Our Customers Say</h3>
-              <p className="text-muted">
-                Trusted by thousands of traders worldwide
-              </p>
+              <p className="text-muted">Trusted by developers, businesses, and professionals worldwide</p>
             </div>
   
-            <div className="carousel-inner container">
-              {/* Testimonial 1 */}
+            <div className="carousel-inner container px-3">
               <div className="carousel-item active">
-                <div className="card border-0 p-4 mx-auto" style={{maxWidth: "800px"}}>
-                  <div className="row align-items-center g-4">
+                <div className="card border-0 p-3 p-lg-4 mx-auto" style={{maxWidth: "800px"}}>
+                  <div className="row align-items-center g-3 g-lg-4">
                     <div className="col-md-4 text-center">
                       <Image
                         src={tes2}
@@ -809,13 +953,13 @@ export default function Others() {
                         className="img-fluid rounded-circle mb-3 mx-auto"
                       />
                       <h5 className="mb-1 text-center">Sarah Williams</h5>
-                      <p className="text-muted small mb-0 text-center">Toronto, Canada</p>
+                      <p className="text-muted small mb-0 text-center">Web Developer, Toronto</p>
                     </div>
                     <div className="col-md-8">
                       <div className="d-flex h-100 align-items-center">
                         <blockquote className="blockquote mb-0">
                           <p className="mb-0 fs-5 fst-italic text-muted">
-                            &quot;Tachys VPS has been a game-changer for my Forex trading. The low latency has significantly improved my execution time, saving me thousands!&quot;
+                            &quot;Tachys VPS has been perfect for hosting our client websites. The performance is outstanding, and the development environment setup was a breeze!&quot;
                           </p>
                         </blockquote>
                       </div>
@@ -823,11 +967,10 @@ export default function Others() {
                   </div>
                 </div>
               </div>
-  
-              {/* Testimonial 2 */}
+
               <div className="carousel-item">
-                <div className="card border-0 shadow-sm p-4 mx-auto" style={{maxWidth: "800px"}}>
-                  <div className="row align-items-center g-4">
+                <div className="card border-0 shadow-sm p-3 p-lg-4 mx-auto" style={{maxWidth: "800px"}}>
+                  <div className="row align-items-center g-3 g-lg-4">
                     <div className="col-md-4 text-center">
                       <Image
                         src={tes3}
@@ -837,13 +980,13 @@ export default function Others() {
                         className="img-fluid rounded-circle mb-3 mx-auto"
                       />
                       <h5 className="mb-1 text-center">Michael Brown</h5>
-                      <p className="text-muted small mb-0 text-center">London, UK</p>
+                      <p className="text-muted small mb-0 text-center">E-commerce Owner, London</p>
                     </div>
                     <div className="col-md-8">
                       <div className="d-flex h-100 align-items-center">
                         <blockquote className="blockquote mb-0">
                           <p className="mb-0 fs-5 fst-italic text-muted">
-                            &quot;I&apos;ve tried multiple VPS providers, but nothing matches Tachys VPS for uptime and reliability. Highly recommended for serious traders.&quot;
+                            &quot;Our online store has never performed better. The reliability and speed of Tachys VPS have significantly improved our customer experience.&quot;
                           </p>
                         </blockquote>
                       </div>
@@ -851,11 +994,10 @@ export default function Others() {
                   </div>
                 </div>
               </div>
-  
-              {/* Testimonial 3 */}
+
               <div className="carousel-item">
-                <div className="card border-0 shadow-sm p-4 mx-auto" style={{maxWidth: "800px"}}>
-                  <div className="row align-items-center g-4">
+                <div className="card border-0 shadow-sm p-3 p-lg-4 mx-auto" style={{maxWidth: "800px"}}>
+                  <div className="row align-items-center g-3 g-lg-4">
                     <div className="col-md-4 text-center">
                       <Image
                         src={tes1}
@@ -865,13 +1007,13 @@ export default function Others() {
                         className="img-fluid rounded-circle mb-3 mx-auto"
                       />
                       <h5 className="mb-1 text-center">Denil Kumar</h5>
-                      <p className="text-muted small mb-0 text-center">Mumbai, India</p>
+                      <p className="text-muted small mb-0 text-center">Game Server Admin, Mumbai</p>
                     </div>
                     <div className="col-md-8">
                       <div className="d-flex h-100 align-items-center">
                         <blockquote className="blockquote mb-0">
                           <p className="mb-0 fs-5 fst-italic text-muted">
-                            &quot;Thanks to Tachys VPS, I can trade 24/7 without interruptions. The 24/7 support is always there when I need help.&quot;
+                            &quot;Running game servers on Tachys VPS has been fantastic. Low latency, great uptime, and the support team is always there when needed.&quot;
                           </p>
                         </blockquote>
                       </div>
@@ -879,11 +1021,10 @@ export default function Others() {
                   </div>
                 </div>
               </div>
-  
-              {/* Testimonial 4 */}
+
               <div className="carousel-item">
-                <div className="card border-0 shadow-sm p-4 mx-auto" style={{maxWidth: "800px"}}>
-                  <div className="row align-items-center g-4">
+                <div className="card border-0 shadow-sm p-3 p-lg-4 mx-auto" style={{maxWidth: "800px"}}>
+                  <div className="row align-items-center g-3 g-lg-4">
                     <div className="col-md-4 text-center">
                       <Image
                         src={tes4}
@@ -893,13 +1034,13 @@ export default function Others() {
                         className="img-fluid rounded-circle mb-3 mx-auto"
                       />
                       <h5 className="mb-1 text-center">Victoria Genesis</h5>
-                      <p className="text-muted small mb-0 text-center">Sydney, Australia</p>
+                      <p className="text-muted small mb-0 text-center">DevOps Engineer, Sydney</p>
                     </div>
                     <div className="col-md-8">
                       <div className="d-flex h-100 align-items-center">
                         <blockquote className="blockquote mb-0">
                           <p className="mb-0 fs-5 fst-italic text-muted">
-                            &quot;Tachys VPS helped me optimize my high-frequency trading strategies. The speed and performance are unmatched!&quot;
+                            &quot;The flexibility and performance of Tachys VPS make it perfect for our CI/CD pipelines and testing environments. Deployment is seamless!&quot;
                           </p>
                         </blockquote>
                       </div>
@@ -907,11 +1048,10 @@ export default function Others() {
                   </div>
                 </div>
               </div>
-  
-              {/* Testimonial 5 */}
+
               <div className="carousel-item">
-                <div className="card border-0 shadow-sm p-4 mx-auto" style={{maxWidth: "800px"}}>
-                  <div className="row align-items-center g-4">
+                <div className="card border-0 shadow-sm p-3 p-lg-4 mx-auto" style={{maxWidth: "800px"}}>
+                  <div className="row align-items-center g-3 g-lg-4">
                     <div className="col-md-4 text-center">
                       <Image
                         src={tes5}
@@ -921,13 +1061,13 @@ export default function Others() {
                         className="img-fluid rounded-circle mb-3 mx-auto"
                       />
                       <h5 className="mb-1 text-center">Maria Gonzalez</h5>
-                      <p className="text-muted small mb-0 text-center">Madrid, Spain</p>
+                      <p className="text-muted small mb-0 text-center">Digital Agency Owner, Madrid</p>
                     </div>
                     <div className="col-md-8">
                       <div className="d-flex h-100 align-items-center">
                         <blockquote className="blockquote mb-0">
                           <p className="mb-0 fs-5 fst-italic text-muted">
-                            &quot;The Algo Market on Tachys VPS is incredible. I found bots that boosted my ROI by 30% in weeks!&quot;
+                            &quot;Managing multiple client projects is effortless with Tachys VPS. The scalability and resource management tools are exceptional!&quot;
                           </p>
                         </blockquote>
                       </div>
@@ -935,11 +1075,10 @@ export default function Others() {
                   </div>
                 </div>
               </div>
-  
-              {/* Testimonial 6 */}
+
               <div className="carousel-item">
-                <div className="card border-0 shadow-sm p-4 mx-auto" style={{maxWidth: "800px"}}>
-                  <div className="row align-items-center g-4">
+                <div className="card border-0 shadow-sm p-3 p-lg-4 mx-auto" style={{maxWidth: "800px"}}>
+                  <div className="row align-items-center g-3 g-lg-4">
                     <div className="col-md-4 text-center">
                       <Image
                         src={tes6}
@@ -949,13 +1088,13 @@ export default function Others() {
                         className="img-fluid rounded-circle mb-3 mx-auto"
                       />
                       <h5 className="mb-1 text-center">Mariam Al-Farsi</h5>
-                      <p className="text-muted small mb-0 text-center">Dubai, UAE</p>
+                      <p className="text-muted small mb-0 text-center">Database Administrator, Dubai</p>
                     </div>
                     <div className="col-md-8">
                       <div className="d-flex h-100 align-items-center">
                         <blockquote className="blockquote mb-0">
                           <p className="mb-0 fs-5 fst-italic text-muted">
-                            &quot;The security features on Tachys VPS give me peace of mind. My trades and data are always safe.&quot;
+                            &quot;The backup features and security measures are top-notch. Perfect for hosting critical database systems with confidence.&quot;
                           </p>
                         </blockquote>
                       </div>
@@ -965,7 +1104,6 @@ export default function Others() {
               </div>
             </div>
   
-            {/* Carousel Controls */}
             <button
               className="carousel-control-prev"
               type="button"
@@ -985,7 +1123,6 @@ export default function Others() {
               <span className="visually-hidden">Next</span>
             </button>
   
-            {/* Carousel Indicators */}
             <div className="carousel-indicators mt-4">
               <button type="button" data-bs-target="#testimonialsCarousel" data-bs-slide-to="0" className="active bg-purple" aria-current="true" aria-label="Slide 1"></button>
               <button type="button" data-bs-target="#testimonialsCarousel" data-bs-slide-to="1" className="bg-purple" aria-label="Slide 2"></button>
@@ -996,15 +1133,19 @@ export default function Others() {
             </div>
           </div>
   
-          <div className="px-4 mt-5 text-start bg-white" id='faq'>
-            <div className="max-w-6xl mx-auto py-16">
-              <h1 className="text-4xl text-purple font-bold text-center mb-4">Frequently Asked Questions</h1>
-              <p className="text-gray-600 text-center mb-12 max-w-2xl mx-auto">Find answers to common questions about Tachys VPS and our services. Can't find what you're looking for? Contact our support team <Link href="/contact-us" className='text-purple-800 fw-bold'>here</Link>.</p>
+          <div className="px-3 px-lg-4 mt-5 text-start bg-white" id='faq'>
+            <div className="max-w-6xl mx-auto py-8 py-lg-16">
+              <h1 className="text-3xl text-lg-4xl text-purple font-bold text-center mb-4">
+                Frequently Asked Questions
+              </h1>
+              <p className="text-gray-600 text-center mb-8 mb-lg-12 max-w-2xl mx-auto px-2">
+                Find answers to common questions about Tachys VPS and our services.
+              </p>
               <div className="space-y-1">
                 <div className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow">
                   <details className="group">
                     <summary className="flex justify-between items-center p-6 cursor-pointer">
-                      <h2 className="text-lg font-semibold text-purple">What makes Tachys VPS ideal for Forex trading?</h2>
+                      <h2 className="text-lg font-semibold text-purple">What can I use Tachys VPS for?</h2>
                       <span className="transition-transform duration-300 group-open:rotate-180">
                         <svg fill="none" height="24" width="24" stroke="currentColor" className="text-gray-400">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
@@ -1012,38 +1153,15 @@ export default function Others() {
                       </span>
                     </summary>
                     <div className="px-6 pb-6 text-gray-600 leading-relaxed">
-                      Tachys VPS is specifically optimized for Forex traders, offering ultra-low latency connections to broker servers, 99.99% uptime to ensure you never miss a trade, and powerful servers capable of running multiple platforms smoothly. Additionally, our focus on security and 24/7 support ensures peace of mind, whether you&apos;re a beginner or a professional trader.
-                    </div>
-                  </details>
-                </div>
-  
-                <div className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow">
-                  <details className="group">
-                    <summary className="flex justify-between items-center p-6 cursor-pointer">
-                      <h2 className="text-lg font-semibold text-purple">Which VPS hosting plan is right for me?</h2>
-                      <span className="transition-transform duration-300 group-open:rotate-180">
-                        <svg fill="none" height="24" width="24" stroke="currentColor" className="text-gray-400">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
-                        </svg>
-                      </span>
-                    </summary>
-                    <div className="px-6 pb-6 text-gray-600 leading-relaxed">
-                      All Tachys VPS plans offers a lots for the buck. The most popular plan our customers choose is Standard & Ultra plan. The right VPS plan depends on your trading needs and experience level:
+                      Tachys VPS is versatile and can be used for various purposes:
                       <ul className="list-disc pl-6 mt-4 space-y-3">
-                        <li>
-                          <span className="font-medium text-gray-800">For Beginners:</span> If you&apos;re just starting or using basic trading tools like a single MT4/MT5 terminal, our entry-level Lite/Basic plan offers sufficient CPU, RAM, and storage to run smoothly.
-                        </li>
-                        <li>
-                          <span className="font-medium text-gray-800">For Intermediate Traders:</span> If you use multiple accounts, Expert Advisors (EAs), or more resource-intensive strategies, consider a Standard plan for enhanced performance and capacity.
-                        </li>
-                        <li>
-                          <span className="font-medium text-gray-800">For Professional Traders:</span> For high-frequency trading (HFT) or managing multiple platforms simultaneously, our Ultra & Dedicated Server plan which includes higher CPU cores, RAM, and ultra-low latency are ideal.
-                        </li>
-                        <li>
-                          <span className="font-medium text-gray-800">For Custom Needs:</span> If you need highly specific configurations or scalability, our Custom plan allows customization to fit your unique trading strategies.
-                        </li>
+                        <li><span className="font-medium text-gray-800">Web Hosting:</span> Host websites, web applications, and e-commerce platforms with reliable performance.</li>
+                        <li><span className="font-medium text-gray-800">Development & Testing:</span> Create development environments, test applications, or run CI/CD pipelines.</li>
+                        <li><span className="font-medium text-gray-800">Trading & Finance:</span> Run trading platforms, algorithmic trading bots, and financial analysis tools.</li>
+                        <li><span className="font-medium text-gray-800">Game Servers:</span> Host multiplayer game servers with low latency.</li>
+                        <li><span className="font-medium text-gray-800">Remote Desktop:</span> Access a powerful Windows or Linux environment from anywhere.</li>
+                        <li><span className="font-medium text-gray-800">Database Hosting:</span> Run database servers for your applications with high availability.</li>
                       </ul>
-                      <p className="mt-4">If you&apos;re unsure, our 24/7 support team can guide you to the best plan based on your goals and trading volume. Start small and upgrade as your needs grow—our plans are flexible and scalable!</p>
                     </div>
                   </details>
                 </div>
@@ -1051,7 +1169,7 @@ export default function Others() {
                 <div className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow">
                   <details className="group">
                     <summary className="flex justify-between items-center p-6 cursor-pointer">
-                      <h2 className="text-lg font-semibold text-purple">Can I run multiple trading platforms on Tachys VPS?</h2>
+                      <h2 className="text-lg font-semibold text-purple">Which VPS plan should I choose?</h2>
                       <span className="transition-transform duration-300 group-open:rotate-180">
                         <svg fill="none" height="24" width="24" stroke="currentColor" className="text-gray-400">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
@@ -1059,7 +1177,15 @@ export default function Others() {
                       </span>
                     </summary>
                     <div className="px-6 pb-6 text-gray-600 leading-relaxed">
-                      Absolutely! Tachys VPS is designed to handle multiple terminals and trading accounts simultaneously, depending on the plan you choose. This makes it perfect for traders who need to manage different strategies, accounts, or brokers without compromising performance.
+                      The right plan depends on your specific needs:
+                      <ul className="list-disc pl-6 mt-4 space-y-3">
+                        <li><span className="font-medium text-gray-800">Basic Plan:</span> Perfect for personal websites, development environments, or light applications.</li>
+                        <li><span className="font-medium text-gray-800">Standard Plan:</span> Ideal for business websites, medium-traffic applications, or running multiple services.</li>
+                        <li><span className="font-medium text-gray-800">Ultra Plan:</span> Suitable for high-traffic websites, resource-intensive applications, or enterprise solutions.</li>
+                        <li><span className="font-medium text-gray-800">Dedicated Server:</span> For maximum performance, complete control, and specialized requirements.</li>
+                        <li><span className="font-medium text-gray-800">Custom Solutions:</span> Available for unique requirements with tailored specifications.</li>
+                      </ul>
+                      <p className="mt-4">Our support team can help you choose the perfect plan based on your specific use case and requirements.</p>
                     </div>
                   </details>
                 </div>
@@ -1067,7 +1193,7 @@ export default function Others() {
                 <div className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow">
                   <details className="group">
                     <summary className="flex justify-between items-center p-6 cursor-pointer">
-                      <h2 className="text-lg font-semibold text-purple">Do I need technical knowledge to use Tachys VPS?</h2>
+                      <h2 className="text-lg font-semibold text-purple">What operating systems do you support?</h2>
                       <span className="transition-transform duration-300 group-open:rotate-180">
                         <svg fill="none" height="24" width="24" stroke="currentColor" className="text-gray-400">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
@@ -1075,7 +1201,7 @@ export default function Others() {
                       </span>
                     </summary>
                     <div className="px-6 pb-6 text-gray-600 leading-relaxed">
-                      Not at all! Tachys VPS is built with simplicity in mind, offering easy setup instructions and a user-friendly control panel. Plus, our 24/7 support team is always available to assist you with installation, troubleshooting, or any technical questions, ensuring you&apos;re always up and running.
+                      We support a wide range of operating systems including Windows Server, Ubuntu, CentOS, Debian, and other popular Linux distributions. Custom OS installations are also available upon request for specific needs.
                     </div>
                   </details>
                 </div>
@@ -1083,7 +1209,7 @@ export default function Others() {
                 <div className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow">
                   <details className="group">
                     <summary className="flex justify-between items-center p-6 cursor-pointer">
-                      <h2 className="text-lg font-semibold text-purple">How secure is Tachys VPS for trading?</h2>
+                      <h2 className="text-lg font-semibold text-purple">How reliable is your service?</h2>
                       <span className="transition-transform duration-300 group-open:rotate-180">
                         <svg fill="none" height="24" width="24" stroke="currentColor" className="text-gray-400">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
@@ -1091,7 +1217,23 @@ export default function Others() {
                       </span>
                     </summary>
                     <div className="px-6 pb-6 text-gray-600 leading-relaxed">
-                      Security is our top priority. Tachys VPS uses industry-standard encryption to protect your data, robust firewalls to prevent unauthorized access, and advanced DDoS protection to safeguard against attacks. With regular updates and monitoring, we provide a secure environment for all your trading activities.
+                      We maintain 99.99% uptime with enterprise-grade infrastructure, redundant systems, and 24/7 monitoring. Our data centers are equipped with backup power, cooling systems, and multiple network connections to ensure continuous operation of your services.
+                    </div>
+                  </details>
+                </div>
+  
+                <div className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow">
+                  <details className="group">
+                    <summary className="flex justify-between items-center p-6 cursor-pointer">
+                      <h2 className="text-lg font-semibold text-purple">How secure is Tachys VPS?</h2>
+                      <span className="transition-transform duration-300 group-open:rotate-180">
+                        <svg fill="none" height="24" width="24" stroke="currentColor" className="text-gray-400">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                      </span>
+                    </summary>
+                    <div className="px-6 pb-6 text-gray-600 leading-relaxed">
+                      Security is our top priority. Tachys VPS uses industry-standard encryption to protect your data, robust firewalls to prevent unauthorized access, and advanced DDoS protection to safeguard against attacks. With regular updates and monitoring, we provide a secure environment for all your services.
                     </div>
                   </details>
                 </div>
@@ -1107,15 +1249,15 @@ export default function Others() {
                       </span>
                     </summary>
                     <div className="px-6 pb-6 text-gray-600 leading-relaxed">
-                      Yes, our plans are fully scalable. As your trading volume or resource requirements grow, you can easily upgrade to a higher plan without downtime. This ensures that your VPS always matches your trading needs, from beginner to professional levels.
+                      Yes, our plans are fully scalable. As your needs or resource requirements grow, you can easily upgrade to a higher plan without downtime. This ensures that your VPS always matches your needs, from basic to professional levels.
                     </div>
                   </details>
                 </div>
-  
+
                 <div className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow">
                   <details className="group">
                     <summary className="flex justify-between items-center p-6 cursor-pointer">
-                      <h2 className="text-lg font-semibold text-purple">What is the Algo Market, and how can I use it?</h2>
+                      <h2 className="text-lg font-semibold text-purple">What technical support do you provide?</h2>
                       <span className="transition-transform duration-300 group-open:rotate-180">
                         <svg fill="none" height="24" width="24" stroke="currentColor" className="text-gray-400">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
@@ -1123,7 +1265,87 @@ export default function Others() {
                       </span>
                     </summary>
                     <div className="px-6 pb-6 text-gray-600 leading-relaxed">
-                      The Algo Market is an exclusive online store by Tachys VPS where you can find both free and premium Forex trading algorithms, bots, and Expert Advisors (EAs). These tools are designed to enhance your trading strategies and save you time. Once you find a bot or EA that suits your needs, you can download and integrate it seamlessly into your trading platform hosted on our VPS. Check it out <Link href={market} className="text-purple-600 hover:text-purple-700 font-medium">here</Link>.
+                      Our technical support includes:
+                      <ul className="list-disc pl-6 mt-4 space-y-3">
+                        <li>24/7 customer support via ticket system, live chat, and email</li>
+                        <li>Server monitoring and proactive issue resolution</li>
+                        <li>Assistance with initial setup and configuration</li>
+                        <li>Basic troubleshooting and problem resolution</li>
+                        <li>Regular system maintenance and updates</li>
+                        <li>Migration assistance for existing services</li>
+                      </ul>
+                    </div>
+                  </details>
+                </div>
+
+                <div className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow">
+                  <details className="group">
+                    <summary className="flex justify-between items-center p-6 cursor-pointer">
+                      <h2 className="text-lg font-semibold text-purple">What backup options are available?</h2>
+                      <span className="transition-transform duration-300 group-open:rotate-180">
+                        <svg fill="none" height="24" width="24" stroke="currentColor" className="text-gray-400">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                      </span>
+                    </summary>
+                    <div className="px-6 pb-6 text-gray-600 leading-relaxed">
+                      We offer comprehensive backup solutions including:
+                      <ul className="list-disc pl-6 mt-4 space-y-3">
+                        <li>Automated daily backups of your entire VPS</li>
+                        <li>Optional weekly and monthly backup retention</li>
+                        <li>Manual backup creation on demand</li>
+                        <li>Easy restore options through control panel</li>
+                        <li>Off-site backup storage for disaster recovery</li>
+                      </ul>
+                      Additional backup storage and retention periods are available as add-on services.
+                    </div>
+                  </details>
+                </div>
+
+                <div className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow">
+                  <details className="group">
+                    <summary className="flex justify-between items-center p-6 cursor-pointer">
+                      <h2 className="text-lg font-semibold text-purple">What network features do you offer?</h2>
+                      <span className="transition-transform duration-300 group-open:rotate-180">
+                        <svg fill="none" height="24" width="24" stroke="currentColor" className="text-gray-400">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                      </span>
+                    </summary>
+                    <div className="px-6 pb-6 text-gray-600 leading-relaxed">
+                      Our network infrastructure includes:
+                      <ul className="list-disc pl-6 mt-4 space-y-3">
+                        <li>High-speed network with multiple Tier-1 providers</li>
+                        <li>DDoS protection included on all plans</li>
+                        <li>Multiple data center locations worldwide</li>
+                        <li>IPv4 and IPv6 support</li>
+                        <li>Configurable firewall rules</li>
+                        <li>Optional dedicated IP addresses</li>
+                        <li>Virtual private network (VPN) compatibility</li>
+                      </ul>
+                    </div>
+                  </details>
+                </div>
+
+                <div className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow">
+                  <details className="group">
+                    <summary className="flex justify-between items-center p-6 cursor-pointer">
+                      <h2 className="text-lg font-semibold text-purple">How quickly can I get started?</h2>
+                      <span className="transition-transform duration-300 group-open:rotate-180">
+                        <svg fill="none" height="24" width="24" stroke="currentColor" className="text-gray-400">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                      </span>
+                    </summary>
+                    <div className="px-6 pb-6 text-gray-600 leading-relaxed">
+                      Most VPS instances are provisioned within minutes after payment confirmation. The setup process includes:
+                      <ul className="list-disc pl-6 mt-4 space-y-3">
+                        <li>Instant account creation</li>
+                        <li>Automated OS installation</li>
+                        <li>Access credentials delivered via email</li>
+                        <li>Ready-to-use control panel access</li>
+                      </ul>
+                      For custom configurations or migrations, our team will provide an estimated timeline based on your specific requirements.
                     </div>
                   </details>
                 </div>

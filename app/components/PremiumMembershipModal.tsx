@@ -1,14 +1,25 @@
-import React from 'react';
-import { auth } from '../functions/firebase';
-import { Crown, Infinity, Newspaper, Rocket, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { auth, db } from '../functions/firebase';
+import { Crown, Infinity, Newspaper, Rocket, X, Check } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { doc, updateDoc } from 'firebase/firestore';
+import { MembershipDuration } from '../types';
 
 interface PremiumMembershipModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+const membershipDurations: MembershipDuration[] = [
+  { months: 1, price: 7 },
+  { months: 3, price: 19, savings: 15 },
+  { months: 6, price: 35, savings: 25 },
+  { months: 12, price: 70, savings: 35 }
+];
+
 export default function PremiumMembershipModal({ isOpen, onClose }: PremiumMembershipModalProps) {
+  const [selectedDuration, setSelectedDuration] = useState<MembershipDuration>(membershipDurations[0]);
+
   const handlePurchase = async () => {
     try {
       const userSession = sessionStorage.getItem('user');
@@ -18,18 +29,24 @@ export default function PremiumMembershipModal({ isOpen, onClose }: PremiumMembe
       }
 
       const userData = JSON.parse(userSession);
+      const membershipId = crypto.randomUUID();
+      const expiryDate = new Date();
+      expiryDate.setMonth(expiryDate.getMonth() + selectedDuration.months);
+
       const response = await fetch('/api/payment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          amount: 7,
+          amount: selectedDuration.price,
           type: 'payment',
-          description: 'Premium Membership Subscription',
+          description: `Premium Membership - ${selectedDuration.months} Month${selectedDuration.months > 1 ? 's' : ''}`,
           customerEmail: userData.email,
           metadata: {
-            membershipId: crypto.randomUUID()
+            membershipId,
+            membershipDuration: selectedDuration.months,
+            membershipExpiry: expiryDate.toISOString()
           }
         }),
       });
@@ -39,6 +56,13 @@ export default function PremiumMembershipModal({ isOpen, onClose }: PremiumMembe
       }
 
       const { paymentUrl } = await response.json();
+
+      // Update session storage with premium status
+      userData.role = 'Premium';
+      userData.premiumExpiration = expiryDate.toISOString();
+      userData.membershipId = membershipId;
+      sessionStorage.setItem('user', JSON.stringify(userData));
+
       window.location.href = paymentUrl;
     } catch (error) {
       console.error('Payment error:', error);
@@ -59,7 +83,7 @@ export default function PremiumMembershipModal({ isOpen, onClose }: PremiumMembe
     >
       <div className="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-t-xl p-4 text-center relative">
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-t-xl p-2 text-center relative">
           <button 
             onClick={onClose}
             className="absolute right-4 top-4 text-white hover:text-gray-200"
@@ -89,10 +113,31 @@ export default function PremiumMembershipModal({ isOpen, onClose }: PremiumMembe
             </div>
           </div>
 
-          {/* Price */}
-          <div className="text-center mb-6">
-            <div className="text-3xl font-bold text-purple-600">$7</div>
-            <div className="text-gray-600 text-sm">Monthly Membership</div>
+          {/* Duration Selection */}
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            {membershipDurations.map((duration) => (
+              <button
+                key={duration.months}
+                onClick={() => setSelectedDuration(duration)}
+                className={`p-1 rounded-lg border-2 transition-all ${
+                  selectedDuration.months === duration.months
+                    ? 'border-purple-600 bg-purple-50'
+                    : 'border-gray-200 hover:border-purple-300'
+                }`}
+              >
+                <div className="text-sm font-semibold text-gray-900">
+                  {duration.months} Month{duration.months > 1 ? 's' : ''}
+                </div>
+                <div className="text-lg font-bold text-purple-600">
+                  ${duration.price}
+                </div>
+                {duration.savings && (
+                  <div className="text-xs text-green-600">
+                    Save {duration.savings}%
+                  </div>
+                )}
+              </button>
+            ))}
           </div>
 
           {/* Action Buttons */}

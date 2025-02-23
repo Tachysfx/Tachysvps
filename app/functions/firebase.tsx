@@ -5,6 +5,8 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage"; // Import for Firebase Storage
 import { getAnalytics, logEvent } from "firebase/analytics"; // Add Analytics import
 import { getDatabase } from "firebase/database"; // Add this import
+import { setPersistence, browserLocalPersistence } from "firebase/auth";
+
 
 // Your Firebase configuration
 const firebaseConfig = {
@@ -33,6 +35,9 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app); // Initialize Firebase Storage
 const realtimeDb = getDatabase(app); // Initialize Realtime Database
+setPersistence(auth, browserLocalPersistence).catch((error) => {
+  console.error("Error setting persistence:", error);
+});
 
 // Configure providers with custom parameters
 const googleAuthProvider = new GoogleAuthProvider();

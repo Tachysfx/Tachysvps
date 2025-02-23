@@ -61,7 +61,7 @@ const AuthHandler = () => {
           setIsAuthModalOpen(true);
         } else {
           if (!isAuthModalOpen) {
-            authTimer = setTimeout(() => setIsAuthModalOpen(true), 180000);
+            authTimer = setTimeout(() => setIsAuthModalOpen(true), 220000);
           }
         }
       } else {
@@ -69,7 +69,7 @@ const AuthHandler = () => {
         
         if (user.role === Role.Normal && !isSignInPage) {
           if (!isPremiumModalOpen) {
-            premiumTimer = setTimeout(() => setIsPremiumModalOpen(true), 180000);
+            premiumTimer = setTimeout(() => setIsPremiumModalOpen(true), 300000);
           }
         }
       }

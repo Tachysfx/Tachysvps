@@ -94,22 +94,30 @@ export default function Footer() {
         <footer className="footer fixed-bottom text-center bg-dark" id="footer2">
             <div className="contact">
                 <Link className="footer-item text-decoration-none px-3 d-flex flex-column justify-content-center align-items-center group" href="/">
-                    <Home className="text-purple-600 w-5 h-5 group-hover:text-white" />
-                    <span className="text-sm">Home</span>
+                    <div data-bs-dismiss="offcanvas" aria-label="Close" data-bs-target="#offcanvasNavbar2" aria-controls="offcanvasNavbar2" className='d-flex flex-column justify-content-center align-items-center group'>
+                        <Home className="text-purple-600 w-5 h-5 group-hover:text-white" />
+                        <span className="text-sm">Home</span>
+                    </div>
                 </Link>
                 <Link className="footer-item text-decoration-none px-3 d-flex flex-column justify-content-center align-items-center group" href="/v6/notifications">
-                    <div className="position-relative">
-                        <Bell className="text-purple-600 w-5 h-5 group-hover:text-white" />
+                    <div data-bs-dismiss="offcanvas" aria-label="Close" data-bs-target="#offcanvasNavbar2" aria-controls="offcanvasNavbar2" className='d-flex flex-column justify-content-center align-items-center group'>
+                        <div className="position-relative">
+                            <Bell className="text-purple-600 w-5 h-5 group-hover:text-white" />
+                        </div>
+                        <span className="text-sm">Alerts</span>
                     </div>
-                    <span className="text-sm">Alerts</span>
                 </Link>
-                <Link className="footer-item text-decoration-none px-3 d-flex flex-column justify-content-center align-items-center group" href="/v6/explore">
-                    <Compass className="text-purple-600 w-5 h-5 group-hover:text-white" />
-                    <span className="text-sm">Explore</span>
+                <Link className="footer-item text-decoration-none px-3 d-flex flex-column justify-content-center align-items-center group" href="/explore">
+                    <div data-bs-dismiss="offcanvas" aria-label="Close" data-bs-target="#offcanvasNavbar2" aria-controls="offcanvasNavbar2" className='d-flex flex-column justify-content-center align-items-center group'>
+                        <Compass className="text-purple-600 w-5 h-5 group-hover:text-white" />
+                        <span className="text-sm">Explore</span>
+                    </div>
                 </Link>
                 <Link className="footer-item text-decoration-none px-3 d-flex flex-column justify-content-center align-items-center group" href="/market">
-                    <Bot className="text-purple-600 w-5 h-5 group-hover:text-white" />
-                    <span className="text-sm">Market</span>
+                    <div data-bs-dismiss="offcanvas" aria-label="Close" data-bs-target="#offcanvasNavbar2" aria-controls="offcanvasNavbar2" className='d-flex flex-column justify-content-center align-items-center group'>
+                        <Bot className="text-purple-600 w-5 h-5 group-hover:text-white" />
+                        <span className="text-sm">Market</span>
+                    </div>
                 </Link>
                 <div className="footer-item navbar-toggler mb-0 px-3 d-flex flex-column justify-content-center align-items-center group" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar2" aria-controls="offcanvasNavbar2">
                     <Menu className="text-purple-600 w-5 h-5 group-hover:text-white" />

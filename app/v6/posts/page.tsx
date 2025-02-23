@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { db, auth, logAnalyticsEvent } from '../../functions/firebase';
 // import { deleteOldFile } from '@/app/intermediaries/fileUtils';
 import { 
@@ -45,11 +45,14 @@ import {
   ChevronLeft,
   ChevronRight,
   Share2,
-  ShieldPlus
+  ShieldPlus,
+  Video
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import React from 'react';
+import Loading from '../../loading';
+import { storageService } from '../../functions/storage';
 
 ChartJS.register(
   CategoryScale,
@@ -87,6 +90,11 @@ interface Post {
   reports: number;
   reportedBy: string[];
   likedBy: string[];
+  videos?: Array<{
+    url: string;
+    path: string;
+    thumbnail?: string;
+  }>;
 }
 
 interface PostsStats {
@@ -99,6 +107,7 @@ interface PostsStats {
 interface EditFormValues {
   content: string;
   images: File[];
+  videos?: File[];
 }
 
 // Add this helper function at the top level
@@ -118,6 +127,7 @@ export default function PostsDashboard() {
   });
   const [newPostContent, setNewPostContent] = useState('');
   const [newImages, setNewImages] = useState<File[]>([]);
+  const [newVideos, setNewVideos] = useState<File[]>([]);
   const [totalMetrics, setTotalMetrics] = useState<PostMetrics>({
     likes: 0,
     comments: 0,
@@ -131,6 +141,7 @@ export default function PostsDashboard() {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const postsPerPage = 10;
+  const [isPosting, setIsPosting] = useState(false);
 
   useEffect(() => {
     const sessionUserString = sessionStorage.getItem("user");
@@ -210,7 +221,8 @@ export default function PostsDashboard() {
             sharedBy: data.sharedBy || [],
             reports: data.reports || 0,
             reportedBy: data.reportedBy || [],
-            likedBy: data.likedBy || []
+            likedBy: data.likedBy || [],
+            videos: data.videos || []
           } as Post;
         });
 
@@ -321,6 +333,13 @@ export default function PostsDashboard() {
     setNewImages(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      setNewVideos([files[0]]);
+    }
+  };
+
   const handleCreatePost = async () => {
     try {
       const sessionUser = getSessionUser();
@@ -329,13 +348,40 @@ export default function PostsDashboard() {
         return;
       }
 
-      // Upload images first
-      const uploadedImages: Array<{ url: string; path: string }> = [];
-      for (const image of newImages) {
+      setIsPosting(true);  // Set loading state
+
+      // Upload images first if any
+      const uploadedImages = await Promise.all(
+        newImages.map(async (image) => {
+          const formData = new FormData();
+          formData.append('file', image);
+          formData.append('folder', 'Posts');
+          formData.append('access', 'private');
+
+          const response = await fetch('/api/storage', {
+            method: 'POST',
+            body: formData
+          });
+
+          const data = await response.json();
+          if (data.success) {
+            return {
+              url: data.url,
+              path: data.path
+            };
+          }
+          return null;
+        })
+      );
+
+      // Upload video if exists
+      let uploadedVideos = [];
+      if (newVideos.length > 0) {
         const formData = new FormData();
-        formData.append('file', image);
+        formData.append('file', newVideos[0]);
         formData.append('folder', 'Posts');
         formData.append('access', 'private');
+        formData.append('generateThumbnail', 'true');
 
         const response = await fetch('/api/storage', {
           method: 'POST',
@@ -344,13 +390,15 @@ export default function PostsDashboard() {
 
         const data = await response.json();
         if (data.success) {
-          uploadedImages.push({
+          uploadedVideos = [{
             url: data.url,
-            path: data.path
-          });
+            path: data.path,
+            thumbnail: data.thumbnail
+          }];
         }
       }
 
+      // Create post document
       await addDoc(collection(db, 'posts'), {
         content: newPostContent,
         authorId: sessionUser.uid,
@@ -359,10 +407,10 @@ export default function PostsDashboard() {
           avatar: userProfile.avatar
         },
         createdAt: serverTimestamp(),
-        images: uploadedImages,
+        images: uploadedImages.filter(Boolean),
+        videos: uploadedVideos,
         likes: 0,
         comments: [],
-        likedBy: [],
         metrics: {
           likes: 0,
           comments: 0,
@@ -371,16 +419,20 @@ export default function PostsDashboard() {
         shares: 0,
         sharedBy: [],
         reports: 0,
-        reportedBy: []
+        reportedBy: [],
+        likedBy: []
       });
 
       setNewPostContent('');
       setNewImages([]);
+      setNewVideos([]);
       logAnalyticsEvent('post_created');
       toast.success('Post created successfully!');
     } catch (error) {
       console.error('Error creating post:', error);
       toast.error('Failed to create post');
+    } finally {
+      setIsPosting(false);  // Reset loading state
     }
   };
 
@@ -399,178 +451,133 @@ export default function PostsDashboard() {
     }
   };
 
-  const handleReport = async (postId: string) => {
-    try {
-      const sessionUser = getSessionUser();
-      if (!sessionUser) {
-        toast.error('Please login to report posts');
-        return;
-      }
-
-      // Add post to hidden posts
-      const updatedHiddenPosts = [...hiddenPosts, postId];
-      setHiddenPosts(updatedHiddenPosts);
-      
-      // Save to localStorage
-      localStorage.setItem(`hiddenPosts_${sessionUser.uid}`, JSON.stringify(updatedHiddenPosts));
-
-      // Add report to Firestore
-      const postRef = doc(db, 'posts', postId);
-      const postDoc = await getDoc(postRef);
-      const post = postDoc.data() as Post;
-
-      // Check if user has already reported
-      if (post.reportedBy?.includes(sessionUser.uid)) {
-        toast.info('You have already reported this post');
-        return;
-      }
-
-      // Update report count and add user to reportedBy array
-      await updateDoc(postRef, {
-        reports: increment(1),
-        reportedBy: arrayUnion(sessionUser.uid)
-      });
-
-      toast.success('Post has been reported and hidden from your feed');
-      logAnalyticsEvent('post_reported', { postId });
-    } catch (error) {
-      console.error('Error reporting post:', error);
-      toast.error('Failed to report post');
-    }
-  };
-
-  const handleShare = async (postId: string) => {
-    try {
-      const sessionUser = getSessionUser();
-      if (!sessionUser) {
-        toast.error('Please login to share posts');
-        return;
-      }
-
-      const postRef = doc(db, 'posts', postId);
-      const postDoc = await getDoc(postRef);
-      const post = postDoc.data() as Post;
-
-      // Check if user has already shared
-      if (post.sharedBy?.includes(sessionUser.uid)) {
-        toast.info('You have already shared this post');
-        return;
-      }
-
-      // Update share count and add user to sharedBy array
-      await updateDoc(postRef, {
-        shares: increment(1),
-        sharedBy: arrayUnion(sessionUser.uid)
-      });
-
-      logAnalyticsEvent('post_shared', { postId });
-      toast.success('Post shared successfully');
-    } catch (error) {
-      console.error('Error updating share count:', error);
-      toast.error('Failed to share post');
-    }
-  };
-
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-white">
-        <div className="flex flex-col items-center">
-          <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mb-4 mx-auto"></div>
-          <p className="text-purple-600 font-medium text-center">Loading your posts...</p>
-        </div>
-      </div>
-    );
+    return <Loading />;
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
+    <div className="min-h-screen bg-gray-100 p-4 sm:p-8">
       <div className="max-w-7xl mx-auto">
-        {/* Header with Explore Link */}
-        <div className="text-center mb-12 bg-gradient-to-r from-purple-600 to-indigo-600 py-12 px-4 rounded-2xl shadow-lg">
-          <h1 className="text-4xl font-bold text-white mb-4 tracking-tight">
+        {/* Header with Explore Link - Mobile optimized */}
+        <div className="text-center mb-6 sm:mb-12 bg-gradient-to-r from-purple-600 to-indigo-600 py-8 sm:py-12 px-4 rounded-xl sm:rounded-2xl shadow-lg">
+          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4 tracking-tight">
             Posts Dashboard
           </h1>
-          <div className="flex justify-between items-center justify-content-center">
           <Link 
-            href="/v6/explore"
-              className="btn btn-light d-flex"
+            href="/explore"
+            className="inline-flex items-center px-4 py-2 bg-white text-purple-600 rounded-lg hover:bg-gray-50 transition-colors"
           >
-              <BookOpen size={20} className='me-2' />
-              <span>Go to Explore</span>
+            <BookOpen size={20} className="mr-2" />
+            <span>Go to Explore</span>
           </Link>
-          </div>
         </div>
-        
-        <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+
+        {/* Info Card - Mobile responsive */}
+        <div className="bg-blue-50 border-l-4 border-blue-500 p-3 sm:p-4 mb-4 text-sm sm:text-base">
           <div className="flex">
             <div className="flex-shrink-0">
               <InfoIcon className="h-5 w-5 text-blue-500" />
             </div>
             <div className="ml-3">
-              <p className="text-sm text-blue-700">
-                <span className="font-medium">Pro tip:</span> Add a title to your post by starting the first line with ## or ### (e.g. ## My Post Title). 
-                This title can be used for filtering, ranking and searching posts.
+              <p className="text-blue-700">
+                <span className="font-medium">Pro tip:</span> To add a title to your post, start the first line with #, ## or ###. For example:
+                <br />
+                ## My Post Title
+                <br />
+                Then write your post content on the next line.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Create Post Card */}
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <div className="flex items-center space-x-4">
+        {/* Create Post Card Section - Mobile optimized */}
+        <div className="bg-white rounded-lg shadow p-3 sm:p-4 mb-6">
+          <div className="flex items-start space-x-3 sm:space-x-4">
             <Image
               src={userProfile.avatar || '/user.png'}
               alt="Current user"
-              width={48}
-              height={48}
-              className="rounded-full"
+              width={40}
+              height={40}
+              className="rounded-full hidden sm:block"
               unoptimized
             />
             <div className="flex-grow">
               <textarea
                 placeholder="What's on your mind?"
-                className="w-full px-4 py-2 bg-gray-100 rounded-lg text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 sm:px-4 py-2 bg-gray-100 rounded-lg text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm sm:text-base"
                 value={newPostContent}
                 onChange={(e) => setNewPostContent(e.target.value)}
-                rows={3}
+                rows={4}
               />
-              <div className="mt-2 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <input
-                    type="file"
-                    id="post-images"
-                    accept="image/*"
-                    multiple
-                    onChange={handleImageSelect}
-                    className="hidden"
-                  />
-                  <label 
-                    htmlFor="post-images" 
-                    className="cursor-pointer text-purple-600 hover:text-purple-700 flex items-center gap-2"
-                  >
-                    <ImagePlus size={20} />
-                    <span>Add Images</span>
-                  </label>
+              <div className="mt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0">
+                <div className="flex items-center justify-start gap-4">
+                  <div className="flex items-center gap-4">
+                    <input
+                      type="file"
+                      id="post-images"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageSelect}
+                      className="hidden"
+                      disabled={newVideos.length > 0}
+                    />
+                    <label 
+                      htmlFor="post-images" 
+                      className={`cursor-pointer text-purple-600 hover:text-purple-700 flex items-center gap-2 text-sm sm:text-base ${
+                        newVideos.length > 0 ? 'text-gray-400 cursor-not-allowed' : ''
+                      }`}
+                    >
+                      <ImagePlus size={18} />
+                      <span>Add Images</span>
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <input
+                      type="file"
+                      id="post-videos"
+                      accept="video/*"
+                      onChange={handleVideoSelect}
+                      className="hidden"
+                      disabled={newImages.length > 0}
+                    />
+                    <label 
+                      htmlFor="post-videos" 
+                      className={`cursor-pointer text-purple-600 hover:text-purple-700 flex items-center gap-2 text-sm sm:text-base ${
+                        newImages.length > 0 ? 'text-gray-400 cursor-not-allowed' : ''
+                      }`}
+                    >
+                      <Video size={18} />
+                      <span>Add Video</span>
+                    </label>
+                  </div>
                 </div>
-                {(newPostContent.trim() || newImages.length > 0) && (
+                {(newPostContent.trim() || newImages.length > 0 || newVideos.length > 0) && (
                   <button
                     onClick={handleCreatePost}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    disabled={isPosting}
+                    className="w-full sm:w-auto px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    Post
+                    {isPosting ? (
+                      <>
+                        <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                        Posting...
+                      </>
+                    ) : (
+                      'Post'
+                    )}
                   </button>
                 )}
               </div>
+              
               {/* Preview Images */}
               {newImages.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-2">
+                <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {newImages.map((image, index) => (
-                    <div key={index} className="relative">
+                    <div key={index} className="relative aspect-square">
                       <Image
                         src={URL.createObjectURL(image)}
                         alt={`Preview ${index + 1}`}
-                        width={100}
-                        height={100}
+                        fill
                         className="rounded-lg object-cover"
                       />
                       <button
@@ -583,131 +590,129 @@ export default function PostsDashboard() {
                   ))}
                 </div>
               )}
+
+              {/* Video Preview */}
+              {newVideos.length > 0 && (
+                <div className="mt-4">
+                  <div className="relative w-full" style={{ maxHeight: '300px' }}>
+                    <video
+                      src={URL.createObjectURL(newVideos[0])}
+                      className="w-full rounded-lg"
+                      controls
+                      preload="metadata"
+                      playsInline
+                      muted={false}
+                      style={{
+                        maxHeight: '300px',
+                        maxWidth: '300px',
+                        objectFit: 'contain',
+                        backgroundColor: '#000'
+                      }}
+                    />
+                    <button
+                      onClick={() => setNewVideos([])}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 z-10"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        {/* Stats Cards - Mobile responsive grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
           <MetricCard 
-            title="Total Posts" 
+            title="Posts" 
             value={stats.totalPosts}
             icon={FileText}
             color="bg-blue-100"
           />
           <MetricCard 
-            title="Total Likes" 
+            title="Likes" 
             value={stats.totalLikes}
             icon={ThumbsUp}
             color="bg-yellow-100"
           />
           <MetricCard 
-            title="Total Comments" 
+            title="Comments" 
             value={stats.totalComments}
             icon={MessageSquare}
             color="bg-purple-100"
           />
           <MetricCard 
-            title="Total Engagement" 
+            title="Engagement" 
             value={stats.engagement}
             icon={BarChart2}
             color="bg-pink-100"
           />
         </div>
 
-        {/* Engagement Chart */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Engagement Analytics</h2>
-          <div className="h-[400px]">
+        {/* Chart Section - Mobile responsive */}
+        <div className="bg-white rounded-lg shadow p-4 sm:p-6 mb-6">
+          <h2 className="text-lg sm:text-xl font-semibold mb-4">Engagement Analytics</h2>
+          <div className="h-[300px] sm:h-[400px]">
             <Bar data={chartData} options={chartOptions as any} />
           </div>
         </div>
 
-        {/* Posts List Section */}
-        <div className="bg-white rounded-lg shadow" id="posts-section">
-          <div className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Your Posts</h2>
+        {/* Posts List Section - Mobile optimized */}
+        <div className="bg-white rounded-lg shadow mb-5">
+          <div className="p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-semibold mb-4">Your Posts</h2>
             <div className="space-y-4">
               {currentPosts.map(post => (
                 <PostCard key={post.id} post={post} onRefresh={fetchPosts} />
               ))}
             </div>
 
-            {/* Pagination */}
+            {/* Pagination - Mobile responsive */}
             {posts.length > postsPerPage && (
-              <div className="mt-6 flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
-                <div className="flex flex-1 justify-between sm:hidden">
+              <div className="mt-6 flex flex-col sm:flex-row items-center justify-between border-t border-gray-200 pt-4">
+                <div className="mb-4 sm:mb-0">
+                  <p className="text-sm text-gray-700">
+                    Showing <span className="font-medium">{indexOfFirstPost + 1}</span> to{' '}
+                    <span className="font-medium">
+                      {Math.min(indexOfLastPost, posts.length)}
+                    </span>{' '}
+                    of <span className="font-medium">{posts.length}</span> posts
+                  </p>
+                </div>
+                <nav className="inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
                   <button
                     onClick={() => paginate(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className={`relative inline-flex items-center rounded-md px-4 py-2 text-sm font-medium ${
-                      currentPage === 1
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-white text-gray-700 hover:bg-gray-50'
+                    className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 ${
+                      currentPage === 1 ? 'cursor-not-allowed' : 'hover:bg-gray-50'
                     }`}
                   >
-                    Previous
+                    <ChevronLeft className="h-5 w-5" />
                   </button>
+                  {[...Array(totalPages)].map((_, index) => (
+                    <button
+                      key={index + 1}
+                      onClick={() => paginate(index + 1)}
+                      className={`relative hidden sm:inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                        currentPage === index + 1
+                          ? 'z-10 bg-purple-600 text-white'
+                          : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {index + 1}
+                    </button>
+                  ))}
                   <button
                     onClick={() => paginate(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className={`relative ml-3 inline-flex items-center rounded-md px-4 py-2 text-sm font-medium ${
-                      currentPage === totalPages
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-white text-gray-700 hover:bg-gray-50'
+                    className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 ${
+                      currentPage === totalPages ? 'cursor-not-allowed' : 'hover:bg-gray-50'
                     }`}
                   >
-                    Next
+                    <ChevronRight className="h-5 w-5" />
                   </button>
-                </div>
-                <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm text-gray-700">
-                      Showing <span className="font-medium">{indexOfFirstPost + 1}</span> to{' '}
-                      <span className="font-medium">
-                        {Math.min(indexOfLastPost, posts.length)}
-                      </span>{' '}
-                      of <span className="font-medium">{posts.length}</span> posts
-                    </p>
-                  </div>
-                  <div>
-                    <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                      <button
-                        onClick={() => paginate(currentPage - 1)}
-                        disabled={currentPage === 1}
-                        className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
-                          currentPage === 1 ? 'cursor-not-allowed' : 'hover:text-gray-700'
-                        }`}
-                      >
-                        <span className="sr-only">Previous</span>
-                        <ChevronLeft className="h-5 w-5" />
-                      </button>
-                      {[...Array(totalPages)].map((_, index) => (
-                        <button
-                          key={index + 1}
-                          onClick={() => paginate(index + 1)}
-                          className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
-                            currentPage === index + 1
-                              ? 'z-10 bg-purple-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600'
-                              : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0'
-                          }`}
-                        >
-                          {index + 1}
-                        </button>
-                      ))}
-                      <button
-                        onClick={() => paginate(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                        className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
-                          currentPage === totalPages ? 'cursor-not-allowed' : 'hover:text-gray-700'
-                        }`}
-                      >
-                        <span className="sr-only">Next</span>
-                        <ChevronRight className="h-5 w-5" />
-                      </button>
-                    </nav>
-                  </div>
-                </div>
+                </nav>
               </div>
             )}
           </div>
@@ -723,14 +728,14 @@ const MetricCard = ({ title, value, icon: Icon, color }: {
   icon: LucideIcon;
   color: string;
 }) => (
-  <div className={`${color} rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow duration-200`}>
+  <div className={`${color} rounded-lg p-3 sm:p-6 shadow-sm hover:shadow-md transition-shadow duration-200`}>
     <div className="flex items-center gap-2">
-      <Icon size={20} className="text-gray-700" />
-      <h3 className="text-gray-700 text-base font-semibold uppercase tracking-wide">{title}</h3>
+      <Icon size={18} className="text-gray-700" />
+      <h3 className="text-gray-700 text-sm sm:text-base font-semibold uppercase tracking-wide">{title}</h3>
     </div>
-    <div className="flex items-baseline mt-3">
-      <p className="text-3xl font-bold text-gray-900">{value.toLocaleString()}</p>
-      <span className="ml-2 text-sm text-gray-500">total</span>
+    <div className="flex items-baseline mt-2 sm:mt-3">
+      <p className="text-xl sm:text-3xl font-bold text-gray-900">{value.toLocaleString()}</p>
+      <span className="ml-2 text-xs sm:text-sm text-gray-500">total</span>
     </div>
   </div>
 );
@@ -740,16 +745,40 @@ const PostCard = ({ post, onRefresh }: {
   onRefresh: () => void;
 }) => {
   const [editImages, setEditImages] = useState<File[]>([]);
+  const [isExpanded, setIsExpanded] = useState(false);
   const router = useRouter();
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Add this helper function to format content
   const formatContent = (content: string) => {
-    return content.split('\n').map((line, index) => (
-      <React.Fragment key={index}>
-        {line}
-        <br />
-      </React.Fragment>
-    ));
+    const MAX_LENGTH = 210;
+    const shouldTruncate = content.length > MAX_LENGTH && !isExpanded;
+    
+    const displayContent = shouldTruncate 
+      ? content.substring(0, MAX_LENGTH) + '...' 
+      : content;
+
+    return (
+      <>
+        {displayContent.split('\n').map((line, index) => (
+          <React.Fragment key={index}>
+            {line}
+            <br />
+          </React.Fragment>
+        ))}
+        {shouldTruncate && (
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsExpanded(true);
+            }}
+            className="text-purple-600 hover:text-purple-700 text-sm font-medium mt-2"
+          >
+            Read more
+          </button>
+        )}
+      </>
+    );
   };
 
   const handleEdit = async () => {
@@ -757,100 +786,67 @@ const PostCard = ({ post, onRefresh }: {
       title: 'Edit Post',
       html: `
         <div class="p-4">
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 text-left mb-2">Content</label>
-            <textarea 
-              id="content" 
-              class="w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 min-h-[170px]"
-              style="min-height: 170px;"
-            >${post.content}</textarea>
-          </div>
+          <textarea id="content" class="w-full p-2 border rounded">${post.content}</textarea>
           
-          ${post.images && post.images.length > 0 ? `
-            <div class="mb-2">
-              <label class="block text-sm font-medium text-gray-700 text-left mb-2">Current Images</label>
-              <div class="grid grid-cols-3 gap-3">
-                ${post.images.map((img, idx) => `
-                  <div class="relative rounded-lg overflow-hidden shadow-sm border border-gray-200">
-                    <img 
-                      src="${img.url}" 
-                      alt="Current ${idx + 1}" 
-                      class="w-full h-24 object-cover"
-                    />
-                  </div>
-                `).join('')}
-              </div>
-              <p class="mt-2 text-sm text-gray-500 text-left">Uploading new images will replace the current ones</p>
+          ${post.videos && post.videos[0] ? `
+            <div class="mt-4">
+              <video src="${post.videos[0].url}" controls class="w-full rounded"></video>
             </div>
           ` : ''}
           
-          <div class="mb-2">
-            <label class="block text-sm font-medium text-gray-700 text-left mb-2">
-              ${post.images && post.images.length > 0 ? 'Replace Images' : 'Add Images'}
-            </label>
-            <input 
-              type="file" 
-              id="images" 
-              accept="image/*" 
-              multiple 
-              class="block w-full text-sm text-gray-500
-                file:mr-4 file:py-2 file:px-4
-                file:rounded-full file:border-0
-                file:text-sm file:font-semibold
-                file:bg-purple-50 file:text-purple-700
-                hover:file:bg-purple-100"
-            />
+          <div class="mt-4">
+            <input type="file" id="videos" accept="video/*" class="w-full" />
+            <div id="video-preview" class="mt-2"></div>
           </div>
-          <div id="image-preview" class="grid grid-cols-3 gap-3 mt-2"></div>
         </div>
       `,
       showCancelButton: true,
       confirmButtonText: 'Save Changes',
       cancelButtonText: 'Cancel',
-      width: '600px',
+      width: '90%',
       customClass: {
         container: 'edit-post-modal',
-        popup: 'rounded-lg shadow-xl',
-        title: 'text-xl font-semibold text-gray-800 border-b pb-3',
-        htmlContainer: 'pt-4',
-        confirmButton: 'bg-purple-600 hover:bg-purple-700',
-        cancelButton: 'bg-gray-500 hover:bg-gray-600',
-        actions: 'border-t pt-3',
+        popup: 'rounded-lg shadow-xl max-w-lg mx-auto',
+        title: 'text-lg sm:text-xl font-semibold text-gray-800 border-b pb-3',
+        htmlContainer: 'pt-3 sm:pt-4',
+        confirmButton: 'bg-purple-600 hover:bg-purple-700 text-sm sm:text-base',
+        cancelButton: 'bg-gray-500 hover:bg-gray-600 text-sm sm:text-base',
+        actions: 'border-t pt-2 sm:pt-3',
       },
       didOpen: () => {
-        // Add image preview functionality
-        const imageInput = document.getElementById('images') as HTMLInputElement;
-        const previewContainer = document.getElementById('image-preview');
+        const videoInput = document.getElementById('videos') as HTMLInputElement;
+        const previewContainer = document.getElementById('video-preview');
         
-        if (imageInput && previewContainer) {
-          imageInput.onchange = () => {
-            previewContainer.innerHTML = '';
-            if (imageInput.files) {
-              Array.from(imageInput.files).forEach((file) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                  previewContainer.innerHTML += `
-                    <div class="relative rounded-lg overflow-hidden shadow-sm border border-gray-200">
-                      <img src="${e.target?.result}" class="w-full h-24 object-cover" />
+        if (videoInput && previewContainer) {
+          videoInput.onchange = () => {
+            const files = videoInput.files;
+            if (files && files.length > 0) {
+              const urls = Array.from(files).map(file => URL.createObjectURL(file));
+              previewContainer.innerHTML = `
+                <div class="space-y-2">
+                  ${urls.map((url, index) => `
+                    <div class="relative w-full aspect-video rounded-lg overflow-hidden mt-2">
+                      <video src="${url}" controls class="w-full h-full object-cover"></video>
                     </div>
-                  `;
-                };
-                reader.readAsDataURL(file);
-              });
+                  `).join('')}
+                </div>
+              `;
             }
           };
         }
       },
       preConfirm: () => {
         const content = (document.getElementById('content') as HTMLTextAreaElement).value;
-        const imageFiles = (document.getElementById('images') as HTMLInputElement).files;
+        const videoFiles = (document.getElementById('videos') as HTMLInputElement).files;
+        
         if (!content.trim()) {
           Swal.showValidationMessage('Please enter some content');
           return false;
         }
+        
         return {
           content: content,
-          images: imageFiles ? Array.from(imageFiles) : []
+          videos: videoFiles ? Array.from(videoFiles) : []
         };
       }
     });
@@ -859,51 +855,49 @@ const PostCard = ({ post, onRefresh }: {
       try {
         const postRef = doc(db, 'posts', post.id);
         
-        // Upload new images if any
-        const uploadedImages: Array<{ url: string; path: string }> = [];
-        if (result.value.images.length > 0) {
-          for (const image of result.value.images) {
-            const formData = new FormData();
-            formData.append('file', image);
-            formData.append('folder', 'Posts');
-            formData.append('access', 'private');
-
-            const response = await fetch('/api/storage', {
-              method: 'POST',
-              body: formData
-            });
-
-            const data = await response.json();
-            if (data.success) {
-              uploadedImages.push({
-                url: data.url,
-                path: data.path
-              });
-            }
-          }
-        }
-
-        // Delete old images if they're being replaced
-        if (result.value.images.length > 0 && post.images && post.images.length > 0) {
-          for (const image of post.images) {
+        // Handle video upload/update
+        let uploadedVideos = post.videos || [];
+        if (result.value.videos && result.value.videos.length > 0) {
+          // Delete old video if exists
+          if (post.videos && post.videos[0]) {
             await fetch('/api/storage', {
               method: 'DELETE',
-              body: JSON.stringify({ 
-                path: image.path,
-                access: 'private',
-                folder: 'Posts'
-              }),
               headers: {
                 'Content-Type': 'application/json',
               },
+              body: JSON.stringify({ 
+                path: decodeURIComponent(post.videos[0].path),
+                access: 'private'
+              })
             });
+          }
+
+          // Upload new video
+          const formData = new FormData();
+          formData.append('file', result.value.videos[0]);
+          formData.append('folder', 'Posts');
+          formData.append('access', 'private');
+          formData.append('generateThumbnail', 'true');
+
+          const response = await fetch('/api/storage', {
+            method: 'POST',
+            body: formData
+          });
+
+          const data = await response.json();
+          if (data.success) {
+            uploadedVideos = [{
+              url: data.url,
+              path: data.path,
+              thumbnail: data.thumbnail
+            }];
           }
         }
 
-        // Update post with correctly typed images array
+        // Update post document
         await updateDoc(postRef, {
           content: result.value.content,
-          images: uploadedImages.length > 0 ? uploadedImages : (post.images || []),
+          videos: uploadedVideos,
           isEdited: true,
           lastEditedAt: serverTimestamp()
         });
@@ -919,46 +913,62 @@ const PostCard = ({ post, onRefresh }: {
   };
 
   const handleDelete = async () => {
-    const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: "You won't be able to revert this!",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Yes, delete it!'
-    });
+    try {
+      const confirmDelete = await Swal.fire({
+        title: 'Are you sure?',
+        text: "You won't be able to revert this!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, delete it!'
+      });
 
-    if (result.isConfirmed) {
-      try {
-        // Delete all images first if they exist
+      if (confirmDelete.isConfirmed) {
+        // Delete video if exists
+        if (post.videos && post.videos[0]) {
+          const videoPath = `Posts/${post.videos[0].path.split('/').pop()}`; // Ensure folder structure
+          await fetch('/api/storage', {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+              path: videoPath,
+              folder: 'Posts',
+              access: 'private'
+            })
+          });
+        }
+
+        // Delete images if they exist
         if (post.images && post.images.length > 0) {
-          for (const image of post.images) {
-            await fetch('/api/storage', {
+          await Promise.all(post.images.map(image => {
+            const imagePath = `Posts/${image.path.split('/').pop()}`; // Ensure folder structure
+            return fetch('/api/storage', {
               method: 'DELETE',
-              body: JSON.stringify({ 
-                path: image.path,
-                access: 'private',
-                folder: 'Posts'
-              }),
               headers: {
                 'Content-Type': 'application/json',
               },
+              body: JSON.stringify({ 
+                path: imagePath,
+                folder: 'Posts',
+                access: 'private'
+              })
             });
-          }
+          }));
         }
         
-        // Delete the post document
+        // Delete post document
         const postRef = doc(db, 'posts', post.id);
         await deleteDoc(postRef);
         
         onRefresh();
         toast.success('Post deleted successfully');
-        logAnalyticsEvent('post_deleted', { postId: post.id });
-      } catch (error) {
-        console.error('Error deleting post:', error);
-        toast.error('Failed to delete post');
       }
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      toast.error('Failed to delete post');
     }
   };
 
@@ -970,7 +980,7 @@ const PostCard = ({ post, onRefresh }: {
     }
     
     // Navigate to Explore page and scroll to this post
-    router.push('/v6/explore');
+    router.push('/explore');
     // Add a small delay to ensure the Explore page is loaded
     setTimeout(() => {
       const postElement = document.getElementById(`post-${post.id}`);
@@ -984,75 +994,108 @@ const PostCard = ({ post, onRefresh }: {
     }, 500);
   };
 
+  // Clean up video preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (videoPreview) {
+        URL.revokeObjectURL(videoPreview);
+      }
+    };
+  }, [videoPreview]);
+
   return (
     <div 
-      className="border rounded-lg p-3 hover:bg-gray-50 cursor-pointer transition-all duration-200"
+      className="border rounded-lg p-2 sm:p-3 hover:bg-gray-50 cursor-pointer transition-all duration-200"
       onClick={handlePostClick}
     >
-      <div className="flex justify-between items-start gap-4">
-        <div className="flex items-start space-x-3 flex-grow">
+      <div className="flex justify-between items-start gap-2 sm:gap-4">
+        <div className="flex items-start space-x-2 sm:space-x-3 flex-grow">
           <Image
             src={post.author.avatar || '/user.png'}
             alt={post.author.name}
-            width={40}
-            height={40}
-            className="rounded-full"
+            width={32}
+            height={32}
+            className="rounded-full w-8 h-8 sm:w-10 sm:h-10"
             unoptimized
           />
           <div className="flex-grow min-w-0">
             <div className="flex items-center justify-between mb-1">
-              <h4 className="font-semibold text-gray-900">{post.author.name}</h4>
-              <p className="text-sm text-gray-500">
+              <h4 className="font-semibold text-gray-900 text-sm sm:text-base">{post.author.name}</h4>
+              <p className="text-xs sm:text-sm text-gray-500">
                 {post.createdAt?.toDate?.() ? post.createdAt.toDate().toLocaleDateString() : new Date().toLocaleDateString()}
               </p>
             </div>
-            <div className="text-gray-800 break-words whitespace-pre-line">
-              {formatContent(post.content)}
+
+            {/* Main Content Section */}
+            <div className="space-y-2">
+              {/* Video Icon and Indicator - Show only if first video exists */}
+              {post.videos && post.videos[0] && (
+                <div className={`flex items-center gap-2 text-blue-600 ${post.content.length < 100 ? 'mb-4 scale-110' : 'mb-2'}`}>
+                  <Video 
+                    size={post.content.length < 100 ? 32 : 24} 
+                    className={`${post.content.length < 100 ? 'animate-pulse' : ''}`}
+                  />
+                  <span className="text-sm font-medium">Video Post</span>
+                </div>
+              )}
+
+              {/* Post Content - Added text-justify */}
+              <div className="text-gray-800 break-words whitespace-pre-line text-sm sm:text-base text-justify">
+                {formatContent(post.content)}
+              </div>
             </div>
-            <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+
+            {/* Posts Icons Details Section */}
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2 text-xs sm:text-sm text-gray-600">
               <span className="flex items-center gap-1">
-                <ThumbsUp size={16} />
+                <ThumbsUp size={14} className="sm:w-4 sm:h-4" />
                 {post.likes || 0}
               </span>
               <span className="flex items-center gap-1">
-                <MessageSquare size={16} />
+                <MessageSquare size={14} className="sm:w-4 sm:h-4" />
                 {post.comments?.length || 0}
               </span>
               <span className="flex items-center gap-1">
-                <BarChart2 size={16} />
+                <BarChart2 size={14} className="sm:w-4 sm:h-4" />
                 {(post.likes || 0) + (post.comments?.length || 0) + (post.metrics?.views || 0)}
               </span>
               <span className="flex items-center gap-1">
-                <Share2 size={16} className="text-blue-500" />
-                {post.shares || 0} shares
+                <Share2 size={14} className="text-blue-500 sm:w-4 sm:h-4" />
+                {post.shares || 0}
               </span>
               <span className="flex items-center gap-1">
-                <ShieldPlus size={16} className="text-red-500" />
-                {post.reports || 0} reports
+                <ShieldPlus size={14} className="text-red-500 sm:w-4 sm:h-4" />
+                {post.reports || 0}
               </span>
+              {post.videos && post.videos[0] && (
+                <span className="flex items-center gap-1 text-blue-600" title='Video'>
+                  <Video size={14} className="sm:w-4 sm:h-4" />
+                  <span>Video</span>
+                </span>
+              )}
               {post.images && post.images.length > 0 && (
                 <span className="flex items-center gap-1 text-purple-600">
-                  <ImagePlus size={16} />
+                  <ImagePlus size={14} className="sm:w-4 sm:h-4" />
                   {post.images.length}
                 </span>
               )}
             </div>
           </div>
         </div>
-        <div className="flex space-x-2 shrink-0">
+        <div className="flex space-x-1 sm:space-x-2 shrink-0">
           <button
             onClick={handleEdit}
             className="text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded-full transition-colors z-10"
             title="Edit post"
           >
-            <Pencil size={18} />
+            <Pencil size={16} className="sm:w-[18px] sm:h-[18px]" />
           </button>
           <button
             onClick={handleDelete}
             className="text-red-600 hover:text-red-800 p-1 hover:bg-red-50 rounded-full transition-colors z-10"
             title="Delete post"
           >
-            <Trash2 size={18} />
+            <Trash2 size={16} className="sm:w-[18px] sm:h-[18px]" />
           </button>
         </div>
       </div>

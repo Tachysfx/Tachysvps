@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { db, auth, logAnalyticsEvent } from '../../functions/firebase';
+import { useState, useEffect, useRef } from 'react';
+import { db, auth, logAnalyticsEvent } from '../functions/firebase';
 import { 
   collection, 
   addDoc, 
@@ -34,6 +34,9 @@ import {
   ShieldPlus,
   Share2,
   Instagram,
+  Video,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import {
   FacebookShareButton,
@@ -45,8 +48,9 @@ import {
   WhatsappIcon,
   TelegramIcon,
 } from 'react-share';
-import { Role } from "../../types/index";
-//import { deleteOldFile } from '@/app/intermediaries/fileUtils';
+import { Role } from "../types/index";
+import AuthModal from '../components/AuthModal';
+import { storageService } from '../functions/storage';
 
 interface Post {
   id: string;
@@ -61,6 +65,11 @@ interface Post {
   images?: Array<{
     url: string;
     path: string;
+  }>;
+  videos?: Array<{
+    url: string;
+    path: string;
+    thumbnail?: string;
   }>;
   likes: number;
   shares: number;
@@ -102,6 +111,8 @@ interface PostCardProps {
   };
   onDelete: (postId: string) => void;
   onReport: (postId: string) => void;
+  isAuthenticated: boolean;
+  onVideoUpload?: (files: FileList) => void;
 }
 
 interface SearchResult {
@@ -110,6 +121,131 @@ interface SearchResult {
   rank: number;
   content: string;
 }
+
+interface ImageGalleryProps {
+  images: Array<{ url: string; path: string }>;
+  initialIndex?: number;
+  onClose: () => void;
+}
+
+const formatPostContent = (content: string) => {
+  const lines = content.split('\n');
+  const firstLine = lines[0];
+  
+  // Check if first line starts with title markers
+  const isTitleLine = /^(#{1,3}|\*)\s/.test(firstLine);
+  
+  if (isTitleLine) {
+    // Remove the markers and wrap title in bold tags
+    const title = firstLine.replace(/^(#{1,3}|\*)\s/, '');
+    const restContent = lines.slice(1).join('\n');
+    return {
+      title: title,
+      content: restContent,
+      hasTitle: true
+    };
+  }
+  
+  return {
+    title: '',
+    content: content,
+    hasTitle: false
+  };
+};
+
+const ImageGallery = ({ images, initialIndex = 0, onClose }: ImageGalleryProps) => {
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
+
+  const handlePrevious = () => {
+    setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  };
+
+  const handleNext = () => {
+    setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+  };
+
+  return (
+    <div 
+      className="fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center"
+      onClick={onClose}
+    >
+      <div 
+        className="relative w-full h-full flex items-center justify-center"
+        onClick={e => e.stopPropagation()}
+      >
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
+          className="absolute top-14 right-4 z-50 p-2 rounded-full bg-black bg-opacity-50 hover:bg-opacity-75 transition-colors"
+        >
+          <X className="w-6 h-6 text-white" />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
+          className="absolute bottom-14 z-50 p-2 rounded-full bg-black bg-opacity-50 hover:bg-opacity-75 transition-colors"
+        >
+          <X className="w-6 h-6 text-white" />
+        </button>
+        
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handlePrevious();
+              }}
+              className="absolute left-4 text-white hover:text-gray-300 z-[1001]"
+            >
+              <ChevronLeft className="w-10 h-10" />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleNext();
+              }}
+              className="absolute right-4 text-white hover:text-gray-300 z-[1001]"
+            >
+              <ChevronRight className="w-10 h-10" />
+            </button>
+          </>
+        )}
+        
+        <Image
+          src={images[currentIndex].url}
+          alt={`Gallery image ${currentIndex + 1}`}
+          fill
+          className="object-contain"
+          sizes="100vw"
+          quality={100}
+          priority
+          onClick={e => e.stopPropagation()}
+        />
+        
+        {images.length > 1 && (
+          <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-[1001]">
+            {images.map((_, index) => (
+              <button
+                key={index}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentIndex(index);
+                }}
+                className={`w-2 h-2 rounded-full ${
+                  index === currentIndex ? 'bg-white' : 'bg-gray-500'
+                }`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const PostCard = ({ 
   post, 
@@ -120,7 +256,8 @@ const PostCard = ({
   isCommentActive,
   currentUser,
   onDelete,
-  onReport
+  onReport,
+  isAuthenticated
 }: PostCardProps) => {
   const [commentText, setCommentText] = useState('');
   const [showMore, setShowMore] = useState(false);
@@ -128,6 +265,10 @@ const PostCard = ({
   const [showDropdown, setShowDropdown] = useState(false);
   const user = auth.currentUser;
   const [showShareMenu, setShowShareMenu] = useState(false);
+  const [isPlaying, setIsPlaying] = useState<{[key: string]: boolean}>({});
+  const videoRefs = useRef<{[key: string]: HTMLVideoElement}>({});
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
 
   const handleSubmitComment = () => {
     if (!commentText.trim()) return;
@@ -190,18 +331,11 @@ const PostCard = ({
 
     return dateObj.toLocaleDateString('en-GB', {
       day: '2-digit',
-      month: '2-digit',
+      month: '2-digit', 
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
     });
-  };
-
-  const formatContent = () => {
-    if (post.content.length <= 280 || showMore) {
-      return post.content;
-    }
-    return post.content.substring(0, 280) + '...';
   };
 
   const handleMoreClick = () => {
@@ -243,6 +377,41 @@ const PostCard = ({
       console.error('Error updating share count:', error);
     }
   };
+
+  const handleVideoInteraction = (videoId: string, playing: boolean) => {
+    setIsPlaying(prev => ({...prev, [videoId]: playing}));
+  };
+
+  // Add intersection observer for videos
+  useEffect(() => {
+    const observers = new Map();
+
+    Object.values(videoRefs.current).forEach(videoRef => {
+      if (videoRef) {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (!entry.isIntersecting && !videoRef.paused) {
+                videoRef.pause();
+              }
+            });
+          },
+          { threshold: 0.5 }
+        );
+
+        observer.observe(videoRef);
+        observers.set(videoRef, observer);
+      }
+    });
+
+    return () => {
+      observers.forEach((observer, videoRef) => {
+        observer.unobserve(videoRef);
+      });
+    };
+  }, [post.videos]);
+
+  const formattedContent = formatPostContent(post.content);
 
   return (
     <div 
@@ -351,14 +520,79 @@ const PostCard = ({
 
         {/* Images Grid */}
         {post.images && post.images.length > 0 && (
-          <div className="grid grid-cols-2 gap-2 mt-3">
-            {post.images.map((image, index) => (
-              <div key={index} className="relative aspect-square">
+          <div className="mt-3">
+            {post.images.length === 1 ? (
+              // Single image layout
+              <div 
+                className="relative w-full pt-[56.25%] cursor-pointer"
+                onClick={() => {
+                  setGalleryIndex(0);
+                  setGalleryOpen(true);
+                }}
+              >
                 <Image
-                  src={image.url}
-                  alt={`Post image ${index + 1}`}
+                  src={post.images[0].url}
+                  alt="Post image"
                   fill
-                  className="rounded-lg object-cover"
+                  className="rounded-lg object-cover absolute inset-0"
+                  sizes="100vw"
+                />
+              </div>
+            ) : (
+              // Multiple images grid layout
+              <div className="grid grid-cols-2 gap-2">
+                {post.images.map((image, index) => (
+                  <div
+                    key={index}
+                    className="relative pt-[100%] cursor-pointer"
+                    onClick={() => {
+                      setGalleryIndex(index);
+                      setGalleryOpen(true);
+                    }}
+                  >
+                    <Image
+                      src={image.url}
+                      alt={`Post image ${index + 1}`}
+                      fill
+                      className="rounded-lg object-cover absolute inset-0"
+                      sizes="(max-width: 768px) 50vw, 33vw"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Videos Grid */}
+        {post.videos && post.videos.length > 0 && (
+          <div className="grid grid-cols-1 gap-2 mt-3 w-full">
+            {post.videos.map((video, index) => (
+              <div 
+                key={`video-${index}`} 
+                className="relative w-full pt-[56.25%]"
+              >
+                <video
+                  ref={el => {
+                    if (el) {
+                      videoRefs.current[`${post.id}-${index}`] = el;
+                    }
+                  }}
+                  src={video.url}
+                  className="absolute inset-0 w-full h-full object-contain bg-black rounded-lg"
+                  controls
+                  playsInline
+                  muted={false}
+                  poster={video.thumbnail}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const video = e.target as HTMLVideoElement;
+                    if (video.paused) {
+                      video.play();
+                    } else {
+                      video.pause();
+                    }
+                  }}
                 />
               </div>
             ))}
@@ -367,15 +601,26 @@ const PostCard = ({
 
         {/* Post Content */}
         <div className="mt-3">
-          <p className="text-gray-800 whitespace-pre-line">
-            {formatContent()}
-            {post.content.length > 280 && !showMore && (
-              <button 
-                onClick={() => setShowMore(true)}
-                className="text-gray-500 hover:text-gray-700 font-medium ml-1"
-              >
-                See more
-              </button>
+          {formattedContent.hasTitle && (
+            <h2 className="font-bold text-base mb-0 px-3">
+              {formattedContent.title}
+            </h2>
+          )}
+          <p className="text-gray-800 px-3 text-justify">
+            {formattedContent.content.length > 250 ? (
+              <>
+                {showMore 
+                  ? formattedContent.content 
+                  : `${formattedContent.content.substring(0, 250)}...`}
+                <button
+                  onClick={() => setShowMore(!showMore)}
+                  className="text-purple-600 hover:text-purple-700 font-medium ml-1"
+                >
+                  {showMore ? 'Show Less' : 'Read More'}
+                </button>
+              </>
+            ) : (
+              formattedContent.content
             )}
           </p>
         </div>
@@ -404,7 +649,10 @@ const PostCard = ({
         <div className="flex justify-between -mx-2">
           <button 
             onClick={onLike}
+            disabled={!isAuthenticated}
             className={`flex-1 flex items-center justify-center space-x-2 px-2 py-3 hover:bg-gray-50 rounded-lg transition-colors ${
+              !isAuthenticated ? 'opacity-50 cursor-not-allowed' : ''
+            } ${
               user && post.likedBy?.includes(user.uid) 
                 ? 'text-red-600' 
                 : 'text-gray-600'
@@ -415,10 +663,12 @@ const PostCard = ({
           </button>
           <button 
             onClick={onComment}
-            className="flex-1 flex items-center justify-center space-x-2 px-2 py-3 hover:bg-gray-50 rounded-lg text-gray-600 transition-colors"
+            className={`flex-1 flex items-center justify-center space-x-2 px-2 py-3 hover:bg-gray-50 rounded-lg text-gray-600 transition-colors ${
+              post.comments.length > 0 ? 'text-purple-600' : ''
+            }`}
           >
-            <MessageSquare className="w-5 h-5" />
-            <span className="font-medium">Comment</span>
+            <MessageSquare className={`w-5 h-5 ${post.comments.length > 0 ? 'fill-current' : ''}`} />
+            <span className="font-medium">Comment{post.comments.length > 0 ? ` (${post.comments.length})` : ''}</span>
           </button>
           <div className="flex-1 relative">
             <button 
@@ -503,35 +753,37 @@ const PostCard = ({
       {/* Comments Section */}
       {isCommentActive && (
         <div className="border-t border-gray-100 px-4 py-3 bg-gray-50">
-          {/* Comment Input */}
-          <div className="flex items-start space-x-2 mb-4">
-            <div className="flex-shrink-0 w-8 h-8">
-              <Image
-                src={currentUser.avatar || '/user.png'}
-                alt="Current user"
-                width={32}
-                height={32}
-                className="rounded-full border-2 border-white shadow-sm"
-                unoptimized
-              />
+          {/* Comment Input - Only show if authenticated */}
+          {isAuthenticated && (
+            <div className="flex items-start space-x-2 mb-4">
+              <div className="flex-shrink-0 w-8 h-8">
+                <Image
+                  src={currentUser.avatar || '/user.png'}
+                  alt="Current user"
+                  width={32}
+                  height={32}
+                  className="rounded-full border-2 border-white shadow-sm"
+                  unoptimized
+                />
+              </div>
+              <div className="flex-grow relative">
+                <input
+                  type="text"
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="Write a comment..."
+                  className="w-full px-4 py-2 bg-white border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
+                />
+                <button
+                  onClick={handleSubmitComment}
+                  disabled={!commentText.trim()}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-500 hover:text-blue-600 disabled:opacity-50 disabled:hover:text-blue-500"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </div>
             </div>
-            <div className="flex-grow relative">
-              <input
-                type="text"
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                placeholder="Write a comment..."
-                className="w-full px-4 py-2 bg-white border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
-              />
-              <button
-                onClick={handleSubmitComment}
-                disabled={!commentText.trim()}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-500 hover:text-blue-600 disabled:opacity-50 disabled:hover:text-blue-500"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+          )}
 
           {/* Show number of comments if there are any */}
           {post.comments.length > 0 && (
@@ -562,22 +814,26 @@ const PostCard = ({
                       <p className="text-gray-800 text-sm mb-0">{comment.content}</p>
                       <div className="flex items-center space-x-4 mt-1 ml-2 text-xs text-gray-500">
                         <span>{formatDate(comment.timeAgo)}</span>
-                        <button 
-                          onClick={() => handleCommentLike(comment.id)}
-                          className={`font-semibold ${
-                            user && comment.likedBy?.includes(user.uid)
-                              ? 'text-red-600'
-                              : 'hover:text-gray-700'
-                          }`}
-                        >
-                          Like
-                        </button>
-                        <button 
-                          onClick={() => setReplyingTo(comment.id)}
-                          className="font-semibold hover:text-gray-700"
-                        >
-                          Reply
-                        </button>
+                        {isAuthenticated && (
+                          <>
+                            <button 
+                              onClick={() => handleCommentLike(comment.id)}
+                              className={`font-semibold ${
+                                user && comment.likedBy?.includes(user.uid)
+                                  ? 'text-red-600'
+                                  : 'hover:text-gray-700'
+                              }`}
+                            >
+                              Like
+                            </button>
+                            <button 
+                              onClick={() => setReplyingTo(comment.id)}
+                              className="font-semibold hover:text-gray-700"
+                            >
+                              Reply
+                            </button>
+                          </>
+                        )}
                         {comment.likes > 0 && (
                           <span className="flex items-center">
                             <Heart className={`w-3 h-3 ${user && comment.likedBy?.includes(user.uid) ? 'fill-current text-red-600' : 'text-blue-500'} mr-1`} />
@@ -587,8 +843,8 @@ const PostCard = ({
                       </div>
                     </div>
 
-                    {/* Reply Input */}
-                    {replyingTo === comment.id && (
+                    {/* Reply Input - Only show if authenticated and replying */}
+                    {isAuthenticated && replyingTo === comment.id && (
                       <div className="flex items-start space-x-2 mt-2">
                         <div className="flex-shrink-0 w-6 h-6">
                           <Image
@@ -668,6 +924,15 @@ const PostCard = ({
           )}
         </div>
       )}
+
+      {/* Gallery */}
+      {galleryOpen && post.images && (
+        <ImageGallery
+          images={post.images}
+          initialIndex={galleryIndex}
+          onClose={() => setGalleryOpen(false)}
+        />
+      )}
     </div>
   );
 };
@@ -681,23 +946,13 @@ const SearchModal = ({ isOpen, onClose, posts }: {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
 
   const extractSearchableTitle = (content: string): { title: string; rank: number } | null => {
-    const lines = content.split('\n');
-    const firstLine = lines[0].trim();
-    
-    if (firstLine.startsWith('###')) {
-      const words = firstLine.slice(3).trim().split(' ').slice(0, 5).join(' ');
-      return { title: words, rank: 4 };
-    } else if (firstLine.startsWith('##')) {
-      const words = firstLine.slice(2).trim().split(' ').slice(0, 5).join(' ');
-      return { title: words, rank: 3 };
-    } else if (firstLine.startsWith('#')) {
-      const words = firstLine.slice(1).trim().split(' ').slice(0, 5).join(' ');
-      return { title: words, rank: 2 };
-    } else if (firstLine.startsWith('*')) {
-      const words = firstLine.slice(1).trim().split(' ').slice(0, 10).join(' ');
-      return { title: words, rank: 1 };
+    const formattedContent = formatPostContent(content);
+    if (formattedContent.hasTitle) {
+      return {
+        title: formattedContent.title,
+        rank: 1
+      };
     }
-    
     return null;
   };
 
@@ -824,10 +1079,8 @@ export default function BlogPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [newPost, setNewPost] = useState('');
   const [newImages, setNewImages] = useState<File[]>([]);
-  const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState('');
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [userProfile, setUserProfile] = useState({
     name: '',
@@ -837,18 +1090,17 @@ export default function BlogPage() {
   const [showSearch, setShowSearch] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [hiddenPosts, setHiddenPosts] = useState<string[]>([]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [newVideos, setNewVideos] = useState<File[]>([]);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authAction, setAuthAction] = useState<'like' | 'comment' | 'post' | null>(null);
 
   useEffect(() => {
     const sessionUserString = sessionStorage.getItem("user");
     if (sessionUserString) {
       const sessionUser = JSON.parse(sessionUserString);
+      setIsAuthenticated(!!sessionUser);
       fetchUserProfile(sessionUser.uid);
-    } else {
-      // If no user is logged in, ensure we still have a default role
-      setUserProfile(prev => ({
-        ...prev,
-        role: Role.Normal
-      }));
     }
     const unsubscribe = subscribeToPosts();
     logAnalyticsEvent('blog_page_view');
@@ -856,22 +1108,8 @@ export default function BlogPage() {
   }, []);
 
   useEffect(() => {
-    const loadHiddenPosts = () => {
-      const user = auth.currentUser;
-      if (user) {
-        const hidden = localStorage.getItem(`hiddenPosts_${user.uid}`);
-        if (hidden) {
-          setHiddenPosts(JSON.parse(hidden));
-        }
-      } else {
-        setHiddenPosts([]);
-      }
-    };
-
-    loadHiddenPosts();
-    // Listen for auth state changes
-    const unsubscribe = auth.onAuthStateChanged(loadHiddenPosts);
-    return () => unsubscribe();
+    const sessionUserString = sessionStorage.getItem("user");
+    setIsAuthenticated(!!sessionUserString);
   }, []);
 
   const fetchUserProfile = async (uid: string) => {
@@ -925,16 +1163,11 @@ export default function BlogPage() {
           };
         }));
         setPosts(fetchedPosts);
-        setLoading(false);
       } catch (error) {
         console.error('Error processing posts:', error);
-        setError('Failed to load posts');
-        setLoading(false);
       }
     }, (error) => {
       console.error('Subscription error:', error);
-      setError('Failed to subscribe to posts');
-      setLoading(false);
     });
   };
 
@@ -949,51 +1182,81 @@ export default function BlogPage() {
     setNewImages(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleVideoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setNewVideos([e.target.files[0]]);
+    }
+  };
+
+  const handleRemoveVideo = (index: number) => {
+    setNewVideos(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAuthRequired = (action: 'like' | 'comment' | 'post') => {
+    if (!isAuthenticated) {
+      setAuthAction(action);
+      setShowAuthModal(true);
+      return true; // Return true if auth was required
+    }
+    return false; // Return false if no auth was required
+  };
+
   const handleCreatePost = async () => {
+    if (handleAuthRequired('post')) return;
+
     try {
       const user = auth.currentUser;
-      if (!user) {
-        toast.error('Please login to create a post');
-        return;
-      }
+      if (!user) return;
 
-      // Upload images first
-      const uploadedImages: Array<{ url: string; path: string }> = [];
-      for (const image of newImages) {
-        const formData = new FormData();
-        formData.append('file', image);
-        formData.append('folder', 'Posts');
-        formData.append('access', 'private');
-
-        const response = await fetch('/api/storage', {
-          method: 'POST',
-          body: formData
-        });
-
-        const data = await response.json();
-        if (data.success) {
-          uploadedImages.push({
-            url: data.url,
-            path: data.path
+      // Upload images
+      const uploadedImages = await Promise.all(
+        newImages.map(async (image) => {
+          const result = await storageService.uploadFile(image, {
+            folder: 'Posts',
+            access: 'private',
+            token: '',
+            metadata: {
+              userId: user.uid,
+              contentType: image.type
+            }
           });
-        }
-      }
+          return result ? { url: result.url, path: result.path } : null;
+        })
+      );
 
-      // Get user's role from Firestore
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      const userData = userDoc.data();
-      const userRole = userData?.role || Role.Normal;
+      // Upload videos
+      const uploadedVideos = await Promise.all(
+        newVideos.map(async (video) => {
+          const result = await storageService.uploadVideo(video, {
+            folder: 'Posts',
+            access: 'private',
+            token: '',
+            generateThumbnail: true,
+            metadata: {
+              userId: user.uid,
+              contentType: video.type
+            }
+          });
+          return result ? {
+            url: result.url,
+            path: result.path,
+            thumbnail: result.thumbnail
+          } : null;
+        })
+      );
 
+      // Create post with filtered uploads
       await addDoc(collection(db, 'posts'), {
         content: newPost,
-        images: uploadedImages,
+        images: uploadedImages.filter(Boolean),
+        videos: uploadedVideos.filter(Boolean),
         authorId: user.uid,
         author: {
           name: userProfile.name,
           avatar: userProfile.avatar,
           title: 'User',
           isConnected: false,
-          role: userRole
+          role: userProfile.role
         },
         createdAt: serverTimestamp(),
         likes: 0,
@@ -1005,7 +1268,8 @@ export default function BlogPage() {
 
       setNewPost('');
       setNewImages([]);
-      logAnalyticsEvent('post_created');
+      setNewVideos([]);
+      setShowCreatePost(false);
       toast.success('Post created successfully!');
     } catch (error) {
       console.error('Error creating post:', error);
@@ -1013,116 +1277,8 @@ export default function BlogPage() {
     }
   };
 
-  const handleDeletePost = async (postId: string) => {
-    try {
-      const user = auth.currentUser;
-      if (!user) {
-        toast.error('Please login to delete posts');
-        return;
-      }
-
-      // Get the post data first to access its images
-      const postRef = doc(db, 'posts', postId);
-      const postDoc = await getDoc(postRef);
-      const postData = postDoc.data();
-
-      // Delete all images associated with the post
-      if (postData?.images && postData.images.length > 0) {
-        for (const image of postData.images) {
-          await fetch('/api/storage', {
-            method: 'DELETE',
-            body: JSON.stringify({ 
-              path: image.path,
-              access: 'private',
-              folder: 'Posts'
-            }),
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          });
-        }
-      }
-
-      // Delete the post document
-      await deleteDoc(postRef);
-      logAnalyticsEvent('post_deleted', { postId });
-      toast.success('Post deleted successfully');
-    } catch (error) {
-      console.error('Error deleting post:', error);
-      toast.error('Failed to delete post');
-    }
-  };
-
-  const handleEditPost = async (postId: string, newContent: string, newImages: File[]) => {
-    try {
-      const user = auth.currentUser;
-      if (!user) {
-        toast.error('Please login to edit posts');
-        return;
-      }
-
-      // Get current post data to access old images
-      const postRef = doc(db, 'posts', postId);
-      const postDoc = await getDoc(postRef);
-      const post = postDoc.data() as Post;
-
-      // Upload new images if any
-      const uploadedImages: Array<{ url: string; path: string }> = [];
-      if (newImages.length > 0) {
-        for (const image of newImages) {
-          const formData = new FormData();
-          formData.append('file', image);
-          formData.append('folder', 'Posts');
-          formData.append('access', 'private');
-
-          const response = await fetch('/api/storage', {
-            method: 'POST',
-            body: formData
-          });
-
-          const data = await response.json();
-          if (data.success) {
-            uploadedImages.push({
-              url: data.url,
-              path: data.path
-            });
-          }
-        }
-      }
-
-      // Delete old images if they're being replaced
-      if (newImages.length > 0 && post.images && post.images.length > 0) {
-        for (const image of post.images) {
-          await fetch('/api/storage', {
-            method: 'DELETE',
-            body: JSON.stringify({ 
-              path: image.path,
-              access: 'private',
-              folder: 'Posts'
-            }),
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          });
-        }
-      }
-
-      // Update post with correctly typed images array
-      await updateDoc(postRef, {
-        content: newContent,
-        images: uploadedImages.length > 0 ? uploadedImages : (post.images || []),
-        isEdited: true,
-        lastEditedAt: serverTimestamp()
-      });
-
-      toast.success('Post updated successfully');
-    } catch (error) {
-      console.error('Error updating post:', error);
-      toast.error('Failed to update post');
-    }
-  };
-
   const handleLike = async (postId: string) => {
+    if (handleAuthRequired('like')) return;
     try {
       const user = auth.currentUser;
       if (!user) {
@@ -1155,7 +1311,8 @@ export default function BlogPage() {
     }
   };
 
-  const handleComment = async (postId: string, commentContent: string) => {
+  const handleComment = async (postId: string, content: string) => {
+    if (handleAuthRequired('comment')) return;
     try {
       const user = auth.currentUser;
       if (!user) {
@@ -1176,7 +1333,7 @@ export default function BlogPage() {
           avatar: userProfile.avatar,
           role: userRole
         },
-        content: commentContent,
+        content: content,
         timeAgo: new Date().toISOString(),
         likes: 0,
         likedBy: [],
@@ -1345,24 +1502,29 @@ export default function BlogPage() {
   // Filter out hidden posts from the display
   const visiblePosts = posts.filter(post => !hiddenPosts.includes(post.id));
 
-  if (loading) {
-    return <div className="flex justify-center items-center h-screen">Loading...</div>;
-  }
-
-  if (error) {
-    return (
-      <div className="flex justify-center items-center h-screen text-red-600">
-        Error: {error}
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-100 pb-8 pt-2 relative">
       {/* Floating Action Buttons */}
       <div className="fixed bottom-14 right-6 z-50">
         {showMenu && (
           <div className="flex flex-col gap-4 mb-4 animate-fade-in">
+            <button
+              onClick={() => {
+                if (!isAuthenticated) {
+                  toast.error('Please login to create a post');
+                  return;
+                }
+                setShowCreatePost(true);
+                setShowMenu(false);
+              }}
+              className={`bg-purple-600 text-white rounded-full p-3 shadow-lg transition-all duration-300 hover:scale-110 ${
+                !isAuthenticated ? 'opacity-50 cursor-not-allowed' : 'hover:bg-purple-700'
+              }`}
+              disabled={!isAuthenticated}
+              title={isAuthenticated ? "Create Post" : "Login to Create Post"}
+            >
+              <MessageSquarePlus className="w-6 h-6" />
+            </button>
             <button
               onClick={() => {
                 setShowSearch(true);
@@ -1372,16 +1534,6 @@ export default function BlogPage() {
               title="Search Posts"
             >
               <Search className="w-6 h-6" />
-            </button>
-            <button
-              onClick={() => {
-                setShowCreatePost(true);
-                setShowMenu(false);
-              }}
-              className="bg-purple-600 text-white rounded-full p-3 shadow-lg hover:bg-purple-700 transition-all duration-300 hover:scale-110"
-              title="Create Post"
-            >
-              <MessageSquarePlus className="w-6 h-6" />
             </button>
           </div>
         )}
@@ -1399,6 +1551,15 @@ export default function BlogPage() {
         isOpen={showSearch}
         onClose={() => setShowSearch(false)}
         posts={posts}
+      />
+
+      {/* Auth Modal */}
+      <AuthModal 
+        isOpen={showAuthModal}
+        onRequestClose={() => {
+          setShowAuthModal(false);
+          setAuthAction(null);
+        }}
       />
 
       {/* Create Post Modal */}
@@ -1442,9 +1603,11 @@ export default function BlogPage() {
                     className="w-full px-4 py-2 bg-gray-100 rounded-lg text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
                     value={newPost}
                     onChange={(e) => setNewPost(e.target.value)}
-                    rows={3}
+                    rows={4}
                     autoFocus
                   />
+                  
+                  {/* Updated Action Buttons Row */}
                   <div className="mt-4 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <input
@@ -1454,26 +1617,53 @@ export default function BlogPage() {
                         multiple
                         onChange={handleImageSelect}
                         className="hidden"
+                        disabled={newVideos.length > 0}
                       />
                       <label 
                         htmlFor="post-images" 
-                        className="cursor-pointer text-purple-600 hover:text-purple-700 flex items-center gap-2"
+                        className={`cursor-pointer flex items-center gap-2 ${
+                          newVideos.length > 0 
+                            ? 'text-gray-400 cursor-not-allowed' 
+                            : 'text-purple-600 hover:text-purple-700'
+                        }`}
                       >
                         <ImagePlus className="w-5 h-5" />
                         <span>Add Images</span>
                       </label>
+
+                      <input
+                        type="file"
+                        id="post-video"
+                        accept="video/*"
+                        onChange={handleVideoSelect}
+                        className="hidden"
+                        disabled={newImages.length > 0}
+                      />
+                      <label 
+                        htmlFor="post-video" 
+                        className={`cursor-pointer flex items-center gap-2 ${
+                          newImages.length > 0 
+                            ? 'text-gray-400 cursor-not-allowed' 
+                            : 'text-purple-600 hover:text-purple-700'
+                        }`}
+                      >
+                        <Video className="w-5 h-5" />
+                        <span>Add Video</span>
+                      </label>
                     </div>
+
                     <button
                       onClick={() => {
                         handleCreatePost();
                         setShowCreatePost(false);
                       }}
-                      disabled={!newPost.trim() && newImages.length === 0}
+                      disabled={!newPost.trim() && newImages.length === 0 && newVideos.length === 0}
                       className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Post
                     </button>
                   </div>
+
                   {/* Preview Images */}
                   {newImages.length > 0 && (
                     <div className="mt-4 grid grid-cols-3 gap-2">
@@ -1493,6 +1683,34 @@ export default function BlogPage() {
                           </button>
                         </div>
                       ))}
+                    </div>
+                  )}
+
+                  {/* Video Preview - Updated for single video with reduced size */}
+                  {newVideos.length > 0 && (
+                    <div className="mt-4">
+                      <div className="relative w-full" style={{ maxHeight: '300px' }}>
+                        <video
+                          src={URL.createObjectURL(newVideos[0])}
+                          className="w-full rounded-lg"
+                          controls
+                          preload="metadata"
+                          playsInline
+                          muted={false}
+                          style={{
+                            maxHeight: '300px',
+                            maxWidth: '300px',
+                            objectFit: 'contain',
+                            backgroundColor: '#000'
+                          }}
+                        />
+                        <button
+                          onClick={() => setNewVideos([])}
+                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 z-10"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1516,6 +1734,7 @@ export default function BlogPage() {
             currentUser={userProfile}
             onDelete={handleDelete}
             onReport={handleReport}
+            isAuthenticated={isAuthenticated}
           />
         ))}
       </div>

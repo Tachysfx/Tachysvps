@@ -1,48 +1,68 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { storageService, StorageOptions } from '../../functions/storage';
+import { put, del, head } from '@vercel/blob';
+import { StorageService } from '../../functions/storage';
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
-    const folder = formData.get('folder') as string;
-    const access = formData.get('access') as 'public' | 'private' || 'private';
-    const collection = formData.get('collection') as string;
-    const docId = formData.get('docId') as string;
-    const field = formData.get('field') as string;
-    const oldPath = formData.get('oldPath') as string;
-
-    const options: StorageOptions = {
-      access,
-      folder,
-      token: process.env.BLOB_READ_WRITE_TOKEN || '',
-      dbUpdate: collection && docId && field ? {
-        collection,
-        docId,
-        field
-      } : undefined
-    };
-
-    let result;
-    if (oldPath) {
-      // Replace existing file
-      result = await storageService.replaceFile(file, oldPath, options);
-    } else {
-      // Upload new file
-      result = await storageService.uploadFile(file, options);
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Storage configuration is missing' 
+      }, { status: 500 });
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      url: result.url,
-      path: result.path
+    const formData = await req.formData();
+    const file = formData.get('file') as File;
+    const folder = formData.get('folder') as string;
+    const access = formData.get('access') as 'public' | 'private';
+    
+    if (!file || !folder) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Missing required fields' 
+      }, { status: 400 });
+    }
+
+    // Get metadata from formData
+    const metadata: Record<string, string> = {};
+    for (const [key, value] of formData.entries()) {
+      if (key.startsWith('metadata[')) {
+        const metaKey = key.slice(9, -1); // Remove 'metadata[' and ']'
+        metadata[metaKey] = value as string;
+      }
+    }
+
+    const path = `${folder}/${Date.now()}-${file.name}`;
+    const { url } = await put(path, file, {
+      access: 'public',
+      token: process.env.BLOB_READ_WRITE_TOKEN!,
+      ...metadata
+    });
+
+    // Skip thumbnail generation on server side
+    let thumbnail = null;
+    if (file.type.startsWith('video/') && formData.get('generateThumbnail') === 'true') {
+      // Log that thumbnail generation is skipped on server
+      console.log('Video thumbnail generation is not supported in API routes');
+    }
+
+    return NextResponse.json({
+      success: true,
+      url,
+      path,
+      thumbnail,
+      metadata: {
+        contentType: file.type,
+        size: file.size,
+        ...metadata
+      }
     });
   } catch (error) {
-    console.error('Storage operation error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Operation failed' },
-      { status: 500 }
-    );
+    console.error('Storage API error:', error);
+    return NextResponse.json({ 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    }, { status: 500 });
   }
 }
 
@@ -50,7 +70,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const path = searchParams.get('path');
-    const access = searchParams.get('access') as 'public' | 'private' || 'private';
+    const access = searchParams.get('access') as 'public' | 'private';
 
     if (!path) {
       return NextResponse.json(
@@ -59,13 +79,23 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const url = await storageService.getFileUrl(path, {
-      access,
-      token: process.env.BLOB_READ_WRITE_TOKEN || ''
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Storage configuration is missing' 
+      }, { status: 500 });
+    }
+
+    const decodedPath = decodeURIComponent(path);
+
+    // For both private and public files, use head to get the URL
+    const { url } = await head(decodedPath, {
+      token: process.env.BLOB_READ_WRITE_TOKEN
     });
 
     return NextResponse.json({ success: true, url });
   } catch (error) {
+    console.error('Storage GET error:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to get file URL' },
       { status: 500 }
@@ -75,12 +105,8 @@ export async function GET(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const path = searchParams.get('path');
-    const access = searchParams.get('access') as 'public' | 'private' || 'private';
-    const collection = searchParams.get('collection');
-    const docId = searchParams.get('docId');
-    const field = searchParams.get('field');
+    const data = await request.json();
+    const { path, access = 'private' } = data;
 
     if (!path) {
       return NextResponse.json(
@@ -89,22 +115,35 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await storageService.deleteFile(path, {
-      access,
-      folder: path.split('/')[0],
-      token: process.env.BLOB_READ_WRITE_TOKEN || '',
-      dbUpdate: collection && docId && field ? {
-        collection,
-        docId,
-        field
-      } : undefined
-    });
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Storage configuration is missing' 
+      }, { status: 500 });
+    }
 
-    return NextResponse.json({ success: true });
+    // Properly format the path for deletion
+    const formattedPath = decodeURIComponent(path);
+    
+    try {
+      await del(formattedPath, {
+        token: process.env.BLOB_READ_WRITE_TOKEN
+      });
+      
+      return NextResponse.json({ success: true });
+    } catch (error) {
+      console.error('Blob deletion error:', error);
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Failed to delete from blob storage',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }, { status: 500 });
+    }
   } catch (error) {
-    return NextResponse.json(
-      { success: false, error: 'Delete failed' },
-      { status: 500 }
-    );
+    console.error('Delete request error:', error);
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Invalid request' 
+    }, { status: 400 });
   }
 } 

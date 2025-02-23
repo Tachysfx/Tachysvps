@@ -12,11 +12,26 @@ export interface StorageOptions {
     docId: string;
     field: string;
   };
+  generateThumbnail?: boolean;
+  maxDuration?: number;
+  maxSize?: number;
+}
+
+export interface VideoMetadata {
+  duration: number;
+  thumbnail?: string;
+  dimensions: {
+    width: number;
+    height: number;
+  };
 }
 
 export class StorageService {
   private static instance: StorageService;
   private readonly token: string;
+  private readonly maxVideoSize = 100 * 1024 * 1024;
+  private readonly maxVideoDuration = 300;
+  private readonly allowedVideoTypes = ['video/mp4', 'video/webm', 'video/quicktime'];
   
   private constructor() {
     this.token = process.env.BLOB_READ_WRITE_TOKEN || '';
@@ -39,30 +54,175 @@ export class StorageService {
   }
 
   /**
+   * Generate video thumbnail using canvas
+   */
+  private async generateVideoThumbnail(videoFile: File): Promise<string | null> {
+    // Skip thumbnail generation on server side
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    return new Promise((resolve, reject) => {
+      const video = document.createElement('video');
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      video.onloadedmetadata = () => {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+      };
+
+      video.onseeked = () => {
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob((blob) => {
+            if (blob) {
+              this.uploadFile(blob, {
+                folder: 'thumbnails',
+                access: 'public',
+                token: this.token
+              }).then(result => {
+                resolve(result.url);
+              }).catch(reject);
+            } else {
+              reject(new Error('Failed to generate thumbnail'));
+            }
+          }, 'image/jpeg', 0.7);
+        }
+      };
+
+      video.onerror = () => {
+        reject(new Error('Error loading video'));
+      };
+
+      video.src = URL.createObjectURL(videoFile);
+      video.onloadeddata = () => {
+        const seekTime = Math.min(1, video.duration * 0.25);
+        video.currentTime = seekTime;
+      };
+    });
+  }
+
+  /**
+   * Get video metadata
+   */
+  private async getVideoMetadata(videoFile: File): Promise<VideoMetadata> {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+
+      video.onloadedmetadata = () => {
+        resolve({
+          duration: video.duration,
+          dimensions: {
+            width: video.videoWidth,
+            height: video.videoHeight
+          }
+        });
+      };
+
+      video.onerror = () => {
+        reject(new Error('Error loading video metadata'));
+      };
+
+      video.src = URL.createObjectURL(videoFile);
+    });
+  }
+
+  /**
+   * Validate video file
+   */
+  private async validateVideo(file: File, options?: StorageOptions): Promise<void> {
+    if (!this.allowedVideoTypes.includes(file.type)) {
+      throw new Error('Invalid video format. Supported formats: MP4, WebM, QuickTime');
+    }
+
+    const maxSize = options?.maxSize || this.maxVideoSize;
+    if (file.size > maxSize) {
+      throw new Error(`Video size exceeds maximum limit of ${maxSize / (1024 * 1024)}MB`);
+    }
+
+    const metadata = await this.getVideoMetadata(file);
+    const maxDuration = options?.maxDuration || this.maxVideoDuration;
+    if (metadata.duration > maxDuration) {
+      throw new Error(`Video duration exceeds maximum limit of ${maxDuration} seconds`);
+    }
+  }
+
+  /**
+   * Upload a video file with thumbnail generation
+   */
+  async uploadVideo(file: File, options: StorageOptions): Promise<{
+    url: string;
+    path: string;
+    thumbnail?: string;
+    metadata: VideoMetadata;
+  }> {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', options.folder);
+      formData.append('access', options.access);
+      formData.append('generateThumbnail', 'true');
+      
+      if (options.metadata) {
+        Object.entries(options.metadata).forEach(([key, value]) => {
+          formData.append(`metadata[${key}]`, value);
+        });
+      }
+
+      const response = await fetch('/api/storage', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.error || 'Video upload failed');
+      }
+
+      return {
+        url: data.url,
+        path: data.path,
+        thumbnail: data.thumbnail,
+        metadata: data.metadata
+      };
+    } catch (error) {
+      console.error('Video upload error:', error);
+      throw new Error('Failed to upload video');
+    }
+  }
+
+  /**
    * Upload a file to Vercel Blob storage
    */
   async uploadFile(file: Blob | File, options: StorageOptions): Promise<{url: string, path: string}> {
     try {
-      const filename = 'name' in file ? file.name : 'blob';
-      const path = this.generatePath(options.folder, filename);
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', options.folder);
+      formData.append('access', options.access);
       
-      const { url } = await put(path, file, {
-        access: 'public',
-        token: options.token || this.token,
-        ...(options.metadata || {}) as Record<string, string>
-      });
-
-      // Update Firestore if dbUpdate is provided
-      if (options.dbUpdate) {
-        const { collection, docId, field } = options.dbUpdate;
-        const docRef = doc(db, collection, docId);
-        await updateDoc(docRef, { 
-          [field]: url,
-          isPrivate: options.access === 'private'
+      if (options.metadata) {
+        Object.entries(options.metadata).forEach(([key, value]) => {
+          formData.append(`metadata[${key}]`, value);
         });
       }
 
-      return { url, path };
+      const response = await fetch('/api/storage', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.error || 'Upload failed');
+      }
+
+      return {
+        url: data.url,
+        path: data.path
+      };
     } catch (error) {
       console.error('Upload error:', error);
       throw new Error('Failed to upload file');
@@ -70,14 +230,18 @@ export class StorageService {
   }
 
   /**
-   * Get file URL from Vercel Blob storage
+   * Get file URL from Vercel Blob storage with signed URLs for private files
    */
   async getFileUrl(path: string, options: Omit<StorageOptions, 'folder'>): Promise<string> {
     try {
-      const { url } = await head(path, {
-        token: options.token || this.token
-      });
-      return url;
+      const response = await fetch(`/api/storage?path=${encodeURIComponent(path)}&access=${options.access}`);
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to get file URL');
+      }
+      
+      return data.url;
     } catch (error) {
       console.error('Get URL error:', error);
       throw new Error('Failed to get file URL');
@@ -85,15 +249,31 @@ export class StorageService {
   }
 
   /**
-   * Delete a file from Vercel Blob storage
+   * Delete a file from Vercel Blob storage with improved error handling
    */
   async deleteFile(path: string, options: StorageOptions): Promise<void> {
     try {
-      await del(path, {
-        token: options.token || this.token
+      // Ensure path is properly formatted
+      const formattedPath = decodeURIComponent(path);
+      
+      const response = await fetch('/api/storage', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          path: formattedPath,
+          access: options.access
+        })
       });
 
-      // Update Firestore if dbUpdate is provided
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Delete operation failed');
+      }
+
+      // Update Firestore if needed
       if (options.dbUpdate) {
         const { collection, docId, field } = options.dbUpdate;
         const docRef = doc(db, collection, docId);
@@ -110,14 +290,8 @@ export class StorageService {
    */
   async replaceFile(file: Blob | File, oldPath: string, options: StorageOptions): Promise<{url: string, path: string}> {
     try {
-      // Delete old file
-      try {
-        await this.deleteFile(oldPath, options);
-      } catch (error) {
-        console.warn('Old file deletion failed:', error);
-      }
+      await this.deleteFile(oldPath, options);
       
-      // Upload new file
       return await this.uploadFile(file, options);
     } catch (error) {
       console.error('Replace error:', error);
@@ -178,6 +352,46 @@ export const uploadAlgoImage = async (file: File): Promise<{ url: string; fileNa
       fileName: string 
     };
     return data.success ? { url: data.url, fileName: data.fileName } : null;
+  } catch (error) {
+    return null;
+  }
+};
+
+// Helper functions for videos
+export const uploadVideo = async (
+  file: File,
+  generateThumbnail = true
+): Promise<{ url: string; path: string; thumbnail?: string } | null> => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder', 'videos');
+    formData.append('generateThumbnail', generateThumbnail.toString());
+
+    const response = await fetch('/api/storage', {
+      method: 'POST',
+      body: formData
+    });
+    
+    const data = await response.json();
+    return data.success ? {
+      url: data.url,
+      path: data.path,
+      thumbnail: data.thumbnail
+    } : null;
+  } catch (error) {
+    console.error('Error uploading video:', error);
+    return null;
+  }
+};
+
+export const getVideoUrl = async (folder: string, fileName: string): Promise<string | null> => {
+  try {
+    const response = await fetch(
+      `/api/storage?folder=${folder}&fileName=${fileName}&type=video`
+    );
+    const data = await response.json();
+    return data.success ? data.url : null;
   } catch (error) {
     return null;
   }

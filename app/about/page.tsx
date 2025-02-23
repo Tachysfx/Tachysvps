@@ -1,4 +1,3 @@
-import { Metadata } from 'next'
 import Image from 'next/image';
 import Link from 'next/link';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -18,48 +17,27 @@ import {
   MapPin,
   Shield,
   BarChart3,
-  UserCheck 
+  UserCheck,
+  Gamepad2,
+  Code2,
+  Database,
+  Layout,
+  Zap,
 } from 'lucide-react';
-
-export const metadata: Metadata = {
-  title: "Tachys FX",
-  description: "Experience lightning-fast VPS hosting with unmatched security and 24/7 support. Perfect for developers, businesses, and anyone needing scalable, reliable infrastructure.",
-  applicationName: "High-Performance VPS Hosting",
-  keywords: "FOREX, Tachys VPS, Forex VPS hosting, Forex trading servers, low-latency Forex VPS, secure Forex VPS, fast VPS for Forex, trading server hosting, Forex VPS solutions, high-speed trading VPS, optimized VPS for Forex, dedicated Forex VPS, low ping Forex VPS, Forex VPS with SSD, MT4 VPS hosting, MetaTrader VPS, reliable Forex VPS, VPS for Forex brokers, Forex server uptime, premium Forex VPS, latency-optimized VPS, trading VPS infrastructure, VPS for financial markets, VPS with instant setup, customizable Forex VPS, 24/7 Forex VPS support, high-performance trading VPS, Forex VPS for EAs, stable VPS for Forex",
-  icons: {
-    icon: '/favicon.png',
-    shortcut: '/favicon.png',
-    apple: '/favicon.png',
-    other: [
-      {
-        rel: 'icon',
-        url: '/favicon.png',
-        sizes: '192x192',
-      },
-      {
-        rel: 'icon',
-        url: '/favicon.png',
-        sizes: '512x512',
-      },
-    ],
-  },
-};
 
 const About = () => {
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Hero Section - Enhanced with animated stats */}
-      <div className="bg-gradient-to-r from-purple-600 to-purple-800 text-white py-20 relative overflow-hidden">
-        <div className="container mx-auto px-4 relative">
-          <div className="text-center mb-16">
-            <div className="inline-block">
-              <span className="px-4 py-1 bg-white/20 rounded-full text-sm font-medium mb-4 backdrop-blur-sm">
-                Established 2024
-              </span>
-            </div>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 mt-4">About Tachys FX</h1>
-            <p className="text-xl text-purple-100 max-w-2xl mx-auto">
-              We&apos;re here to assist with all your VPS and trading needs - let&apos;s connect today!
+    <div className="min-h-screen bg-gray-50">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-purple-600 to-purple-800 text-white py-16">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-8">
+            <span className="px-4 py-1 bg-white/20 rounded-full text-sm font-medium backdrop-blur-sm">
+              Established 2020
+            </span>
+            <h1 className="text-4xl font-bold mt-4 mb-3">About Tachys VPS</h1>
+            <p className="text-lg text-purple-100 max-w-2xl mx-auto">
+              Join thousands of businesses, developers, gamers, and traders who trust Tachys VPS for their digital infrastructure
             </p>
           </div>
           
@@ -145,7 +123,7 @@ const About = () => {
               <h3 className="text-2xl font-bold text-purple-600">Our Mission</h3>
             </div>
             <p className="text-gray-600 leading-relaxed">
-              Our mission is to provide reliable, high-performance VPS hosting and cutting-edge trading applications that empower traders and businesses to maximize their potential.
+              Our mission is to deliver reliable, high-performance VPS hosting solutions that empower businesses and individuals to achieve their goals, whether they're scaling web applications, hosting game servers, developing software, or executing trades.
             </p>
           </div>
 
@@ -157,7 +135,7 @@ const About = () => {
               <h3 className="text-2xl font-bold text-purple-600">Our Vision</h3>
             </div>
             <p className="text-gray-600 leading-relaxed">
-              To be the leading platform for VPS hosting and trading solutions, bridging the gap between technology and success for traders around the world.
+              To be the leading provider of versatile VPS solutions, setting new standards in performance, reliability, and innovation across all digital sectors - from web hosting to financial markets.
             </p>
           </div>
         </div>
@@ -244,7 +222,7 @@ const About = () => {
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl font-bold mb-6">Our Story</h2>
             <p className="text-purple-100 leading-relaxed">
-              Tachys VPS was founded in 2024 with a simple idea: to provide traders with high-performance VPS hosting and premium trading tools. What started as a small team has now grown into a complete platform with scalable solutions for all types of traders.
+              Tachys VPS was founded in 2020 with a bold vision: to provide enterprise-grade VPS solutions that power the digital world. What started as a commitment to excellence has grown into a comprehensive platform serving diverse needs - from web hosting and game servers to development environments and trading infrastructure.
             </p>
           </div>
         </div>
@@ -355,33 +333,63 @@ const About = () => {
         </div>
 
         {/* Testimonials Section */}
-        <div>
-          <h2 className="text-3xl font-bold text-purple-600 text-center mb-12">What Our Customers Say</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="py-8">
+          <h2 className="text-3xl font-bold text-purple-600 text-center mb-8">What Our Customers Say</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
               {
-                quote: "Tachys VPS helped me scale my trading operations with their lightning-fast VPS and powerful trading bots.",
-                author: "Sarah T., Professional Trader"
+                quote: "Our e-commerce platform loads lightning-fast. Outstanding performance and reliability!",
+                author: "Sarah Chen",
+                role: "E-commerce Owner",
+                icon: Globe
               },
               {
-                quote: "Their 24/7 customer support is always available to help me with any issues. Couldn't be happier!",
-                author: "Mike D., Reseller"
+                quote: "Perfect latency for our game servers. Players experience zero lag worldwide.",
+                author: "Mike Davidson",
+                role: "Gaming Host",
+                icon: Gamepad2
               },
               {
-                quote: "The security features give me peace of mind. My trades and data are always safe.",
-                author: "Al-Farsi., Trader"
+                quote: "Development and deployment is seamless. Great for our CI/CD pipeline.",
+                author: "Elena Rodriguez",
+                role: "Lead Developer",
+                icon: Code2
+              },
+              {
+                quote: "Rock-solid database hosting with automated backups. Exactly what we needed.",
+                author: "Ahmed Al-Farsi",
+                role: "DB Admin",
+                icon: Database
+              },
+              {
+                quote: "Ultra-low latency and 100% uptime. Essential for our trading operations.",
+                author: "Thomas Wright",
+                role: "Pro Trader",
+                icon: LineChart
+              },
+              {
+                quote: "Managing client websites is effortless. Intuitive control panel and instant scaling.",
+                author: "Maria Santos",
+                role: "Web Agency",
+                icon: Layout
               }
             ].map((testimonial, index) => (
               <div 
                 key={index}
-                className="bg-white p-6 rounded-xl shadow-lg border border-purple-100 transform hover:-translate-y-1 transition-all duration-200"
+                className="bg-white p-4 rounded-lg shadow-sm border border-purple-50 hover:shadow-md transition-all duration-200"
               >
-                <div className="flex flex-col h-full">
-                  <div className="flex-grow">
-                    <Heart className="w-6 h-6 text-purple-400 mb-4" />
-                    <p className="text-gray-600 italic mb-4">&quot;{testimonial.quote}&quot;</p>
+                <div className="flex items-start">
+                  <div className="p-2 bg-purple-50 rounded-lg mr-3">
+                    <testimonial.icon className="w-4 h-4 text-purple-600" />
                   </div>
-                  <p className="text-purple-600 font-medium">{testimonial.author}</p>
+                  <div>
+                    <p className="text-gray-600 text-sm mb-2">&quot;{testimonial.quote}&quot;</p>
+                    <div className="flex items-center text-sm">
+                      <span className="font-medium text-purple-600">{testimonial.author}</span>
+                      <span className="mx-2 text-gray-300">|</span>
+                      <span className="text-gray-500">{testimonial.role}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
@@ -430,7 +438,7 @@ const About = () => {
           <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-2xl p-12 text-center">
             <h2 className="text-3xl font-bold text-white mb-4">Ready to Get Started?</h2>
             <p className="text-purple-100 mb-8 max-w-2xl mx-auto">
-              Join thousands of traders who trust Tachys VPS for their trading infrastructure
+              Join thousands of professionals worldwide who trust Tachys VPS for their mission-critical infrastructure
             </p>
             <div className="flex justify-center gap-4">
               <Link 

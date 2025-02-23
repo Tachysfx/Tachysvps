@@ -3,6 +3,7 @@ export enum AlgoType { EAs = "EAs", Indicators = "Indicators", Libraries = "Libr
 export enum Cost { Free = "Free", Premium = "Premium" }
 export enum Status { Complete = "Complete", NotComplete = "NotComplete" }
 export enum Identity { Internal = "Internal", External = "External" }
+export enum Role { Normal = "Normal", Premium = "Premium", Admin = "Admin" }
 
 export interface AddAlgoFormProps {
     id: string;
@@ -273,11 +274,6 @@ export type Algo = {
   app_path: string;
 };
 
-export enum Role {
-  Normal = "Normal",
-  Premium = "Premium",
-  Admin = "Admin"
-}
 export type User = {
   id: string;
   username?: string;
@@ -455,3 +451,60 @@ export interface UnverifiedAlgo {
   platform: string;
   md_description: string;
 }
+
+export interface MembershipDuration {
+  months: number;
+  price: number;
+  savings?: number;
+}
+
+export interface MembershipPlan {
+  duration: MembershipDuration;
+  isPopular?: boolean;
+}
+
+export interface PaymentRequest {
+  amount: number;
+  currency?: string;
+  description: string;
+  orderId?: string;
+  customerEmail?: string;
+  payeeEmail?: string;
+  type: 'payment' | 'withdrawal';
+  metadata?: {
+    algoId?: string;
+    sellerId?: string;
+    algoName?: string;
+    vpsOrderId?: string;
+    membershipId?: string;
+    membershipDuration?: number;
+    membershipExpiry?: string;
+  };
+}
+
+// Add date formatting function
+export const formatDate = (date: Date | number | string): string => {
+  const d = new Date(date);
+  const now = new Date();
+  const diff = now.getTime() - d.getTime();
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 7) {
+    return d.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  } else if (days > 0) {
+    return `${days}d ago`;
+  } else if (hours > 0) {
+    return `${hours}h ago`;
+  } else if (minutes > 0) {
+    return `${minutes}m ago`;
+  } else {
+    return 'Just now';
+  }
+};

@@ -99,7 +99,7 @@ const SupportPage = () => {
             {filteredArticles.map((article) => (
               <Link 
                 key={article.id}
-                href={`/v6/explore?post=${article.id}`}
+                href={`/explore?post=${article.id}`}
                 className="bg-white p-4 rounded-xl border border-gray-200 hover:border-purple-200 transition-all cursor-pointer"
               >
                 <div className="flex items-start">

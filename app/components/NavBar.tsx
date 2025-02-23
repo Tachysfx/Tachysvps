@@ -137,7 +137,7 @@ export default function NavBar() {
       <li className="nav-item" data-bs-dismiss="offcanvas" aria-label="Close">
         <Link className="nav-link d-flex align-items-center px-3 py-2 group boldd" href="/market">
           <Store className="text-purple-600 w-5 h-5 me-3 md:group-hover:text-purple-600 group-hover:text-white" />
-          Algos Market
+          Algo Market
         </Link>
       </li>
       <li className="nav-item dropdown">
@@ -199,7 +199,7 @@ export default function NavBar() {
               alt="blur"
               className="align-middle logo"
             />
-            <span className='text-purple'>Tachys FX</span>
+            <span className='text-purple'>Tachys VPS</span>
           </Link>
 
           <div className='user p-1 me-2'>
@@ -219,7 +219,7 @@ export default function NavBar() {
                 alt="blur"
                 className="align-middle logo"
               />
-              <span className='text-purple'>Tachys FX</span>
+              <span className='text-purple'>Tachys VPS</span>
               <button type="button" className="btn-close btn-close-dark" data-bs-dismiss="offcanvas" aria-label="Close"></button>
             </div>
             {/* Off Canvas Body Section */}
@@ -244,7 +244,7 @@ export default function NavBar() {
                     <li className="nav-item" data-bs-dismiss="offcanvas" aria-label="Close">
                       <Link className="nav-link d-flex align-items-center px-3 py-2 group boldd" href="/market">
                         <Store className="text-purple-600 w-5 h-5 me-3 md:group-hover:text-purple-600 group-hover:text-white" />
-                        Algos Market
+                        Algo Market
                       </Link>
                     </li>
                     <li className="nav-item separate" data-bs-dismiss="offcanvas" aria-label="Close">
