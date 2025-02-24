@@ -16,7 +16,8 @@ import {
   faQuestionCircle,
   faExclamationTriangle 
 } from '@fortawesome/free-solid-svg-icons';
-import { PaymentData, PaymentAnalytics, Invoice, Subscription } from "../../types";
+import { PaymentData, PaymentAnalytics, Subscription } from "../../types";
+import Loading from "../../loading";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -173,14 +174,7 @@ export default function PaymentPage() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-white">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mb-4"></div>
-          <p className="text-purple-600 font-medium">Loading payment data...</p>
-        </div>
-      </div>
-    );
+    return <Loading />;
   }
 
   return (

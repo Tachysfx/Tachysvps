@@ -752,31 +752,47 @@ const PostCard = ({ post, onRefresh }: {
 
   const formatContent = (content: string) => {
     const MAX_LENGTH = 210;
-    const shouldTruncate = content.length > MAX_LENGTH && !isExpanded;
+    const lines = content.split('\n');
+    const firstLine = lines[0];
     
+    // Check if first line starts with title markers
+    const isTitleLine = /^(#{1,3}|\*)\s/.test(firstLine);
+    
+    let title = '';
+    let mainContent = content;
+    
+    if (isTitleLine) {
+      // Remove the markers for title
+      title = firstLine.replace(/^(#{1,3}|\*)\s/, '');
+      mainContent = lines.slice(1).join('\n');
+    }
+
+    const shouldTruncate = mainContent.length > MAX_LENGTH && !isExpanded;
     const displayContent = shouldTruncate 
-      ? content.substring(0, MAX_LENGTH) + '...' 
-      : content;
+      ? mainContent.substring(0, MAX_LENGTH) + '...' 
+      : mainContent;
 
     return (
       <>
-        {displayContent.split('\n').map((line, index) => (
-          <React.Fragment key={index}>
-            {line}
-            <br />
-          </React.Fragment>
-        ))}
-        {shouldTruncate && (
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsExpanded(true);
-            }}
-            className="text-purple-600 hover:text-purple-700 text-sm font-medium mt-2"
-          >
-            Read more
-          </button>
+        {isTitleLine && (
+          <h2 className="font-bold text-base mb-2">
+            {title}
+          </h2>
         )}
+        <div className="whitespace-pre-wrap">
+          {displayContent}
+          {shouldTruncate && (
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsExpanded(true);
+              }}
+              className="text-purple-600 hover:text-purple-700 text-sm font-medium ml-1"
+            >
+              Read more
+            </button>
+          )}
+        </div>
       </>
     );
   };
@@ -785,17 +801,49 @@ const PostCard = ({ post, onRefresh }: {
     const result: SweetAlertResult<EditFormValues> = await Swal.fire({
       title: 'Edit Post',
       html: `
-        <div class="p-4">
-          <textarea id="content" class="w-full p-2 border rounded">${post.content}</textarea>
+        <div class="p-1">
+          <div class="mb-1">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Post Content</label>
+            <textarea 
+              id="content" 
+              class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-y"
+              placeholder="What's on your mind?"
+              rows="4"
+              style="max-height: 400px; overflow-y: auto;"
+            >${post.content}</textarea>
+          </div>
           
           ${post.videos && post.videos[0] ? `
-            <div class="mt-4">
-              <video src="${post.videos[0].url}" controls class="w-full rounded"></video>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Current Video</label>
+              <div class="relative rounded-lg overflow-hidden bg-black">
+                <video 
+                  src="${post.videos[0].url}" 
+                  controls 
+                  class="w-full h-auto max-h-[200px] object-contain"
+                ></video>
+              </div>
             </div>
           ` : ''}
           
-          <div class="mt-4">
-            <input type="file" id="videos" accept="video/*" class="w-full" />
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              ${post.videos && post.videos[0] ? 'Replace Video' : 'Add Video'}
+            </label>
+            <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-purple-500 transition-colors">
+              <div class="space-y-1 text-center">
+                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                  <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <div class="flex text-sm text-gray-600">
+                  <label for="videos" class="relative cursor-pointer rounded-md font-medium text-purple-600 hover:text-purple-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-purple-500">
+                    <span>Upload a video</span>
+                    <input id="videos" type="file" accept="video/*" class="sr-only">
+                  </label>
+                </div>
+                <p class="text-xs text-gray-500">MP4, WebM up to 10MB</p>
+              </div>
+            </div>
             <div id="video-preview" class="mt-2"></div>
           </div>
         </div>
@@ -806,16 +854,29 @@ const PostCard = ({ post, onRefresh }: {
       width: '90%',
       customClass: {
         container: 'edit-post-modal',
-        popup: 'rounded-lg shadow-xl max-w-lg mx-auto',
-        title: 'text-lg sm:text-xl font-semibold text-gray-800 border-b pb-3',
-        htmlContainer: 'pt-3 sm:pt-4',
-        confirmButton: 'bg-purple-600 hover:bg-purple-700 text-sm sm:text-base',
-        cancelButton: 'bg-gray-500 hover:bg-gray-600 text-sm sm:text-base',
-        actions: 'border-t pt-2 sm:pt-3',
+        popup: 'rounded-xl shadow-xl max-w-2xl mx-auto',
+        title: 'text-xl font-semibold text-gray-800 border-b pb-3',
+        htmlContainer: 'pt-4',
+        confirmButton: 'bg-purple-600 hover:bg-purple-700 px-6 py-2 rounded-lg text-white font-medium transition-colors',
+        cancelButton: 'bg-gray-100 hover:bg-gray-200 px-6 py-2 rounded-lg text-gray-800 font-medium transition-colors',
+        actions: 'border-t pt-3 gap-3',
       },
       didOpen: () => {
         const videoInput = document.getElementById('videos') as HTMLInputElement;
         const previewContainer = document.getElementById('video-preview');
+        const contentTextarea = document.getElementById('content') as HTMLTextAreaElement;
+        
+        // Set initial height based on content
+        contentTextarea.style.height = 'auto';
+        const initialHeight = Math.min(contentTextarea.scrollHeight, 400);
+        contentTextarea.style.height = `${initialHeight}px`;
+
+        // Auto-resize on input, but respect max height
+        contentTextarea.addEventListener('input', () => {
+          contentTextarea.style.height = 'auto';
+          const newHeight = Math.min(contentTextarea.scrollHeight, 400);
+          contentTextarea.style.height = `${newHeight}px`;
+        });
         
         if (videoInput && previewContainer) {
           videoInput.onchange = () => {
@@ -823,10 +884,14 @@ const PostCard = ({ post, onRefresh }: {
             if (files && files.length > 0) {
               const urls = Array.from(files).map(file => URL.createObjectURL(file));
               previewContainer.innerHTML = `
-                <div class="space-y-2">
+                <div class="mt-4 space-y-2">
                   ${urls.map((url, index) => `
-                    <div class="relative w-full aspect-video rounded-lg overflow-hidden mt-2">
-                      <video src="${url}" controls class="w-full h-full object-cover"></video>
+                    <div class="relative rounded-lg overflow-hidden bg-black">
+                      <video 
+                        src="${url}" 
+                        controls 
+                        class="w-full h-auto max-h-[200px] object-contain"
+                      ></video>
                     </div>
                   `).join('')}
                 </div>
@@ -972,26 +1037,16 @@ const PostCard = ({ post, onRefresh }: {
     }
   };
 
-  const handlePostClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handlePostClick = async (e: React.MouseEvent<HTMLDivElement>) => {
     // Check if the click was on the edit or delete buttons
     const target = e.target as HTMLElement;
     if (target.closest('button')) {
       return;
     }
     
-    // Navigate to Explore page and scroll to this post
+    // Store the post ID in sessionStorage for navigation
+    sessionStorage.setItem('scrollToPost', post.id);
     router.push('/explore');
-    // Add a small delay to ensure the Explore page is loaded
-    setTimeout(() => {
-      const postElement = document.getElementById(`post-${post.id}`);
-      if (postElement) {
-        postElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        postElement.classList.add('post-highlight');
-        setTimeout(() => {
-          postElement.classList.remove('post-highlight');
-        }, 2000);
-      }
-    }, 500);
   };
 
   // Clean up video preview URL on unmount

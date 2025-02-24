@@ -170,7 +170,7 @@ const SupportPage = () => {
               <FontAwesomeIcon icon={faPhone} className="text-purple-500 text-2xl mt-1 mr-3" />
               <div>
                 <h5 className="font-medium text-gray-900 mb-1">Phone Support</h5>
-                <p className="text-gray-600">+123 456 789</p>
+                <p className="text-gray-600">+44 2890 ***</p>
               </div>
             </div>
 

@@ -6,7 +6,8 @@ import { toast } from "react-toastify";
 import type { EnrichedAlgo } from '../../../lib/Details';
 import { db } from '../../../functions/firebase';
 import { doc, updateDoc, arrayUnion, increment, getDoc } from "firebase/firestore";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Download, ShoppingBag, Cpu, Server, Globe2, ArrowRight, Timer } from 'lucide-react';
 import PremiumMembershipModal from '../../../components/PremiumMembershipModal';
 
 const downloads = '/downloads.png';
@@ -16,7 +17,88 @@ type DownloadComponentProps = {
   id: string;
 };
 
+const CountdownComponent = ({ onComplete }: { onComplete: () => void }) => {
+  const [count, setCount] = useState(10);
+  const [dots, setDots] = useState('');
+  const [isComplete, setIsComplete] = useState(false);
+
+  useEffect(() => {
+    let dotInterval: NodeJS.Timeout;
+    let timer: NodeJS.Timeout;
+
+    // Only start the intervals if not complete
+    if (!isComplete) {
+      // Animate loading dots
+      dotInterval = setInterval(() => {
+        setDots(prev => prev.length >= 3 ? '' : prev + '.');
+      }, 500);
+
+      // Countdown timer
+      timer = setInterval(() => {
+        setCount(prev => {
+          const newCount = prev - 1;
+          if (newCount <= 0) {
+            // Mark as complete
+            setIsComplete(true);
+            return 0;
+          }
+          return newCount;
+        });
+      }, 1000);
+    }
+
+    // When complete, trigger the callback
+    if (isComplete) {
+      // Small delay to ensure smooth transition
+      const completeTimer = setTimeout(() => {
+        onComplete();
+      }, 100);
+      return () => clearTimeout(completeTimer);
+    }
+
+    // Cleanup intervals
+    return () => {
+      clearInterval(dotInterval);
+      clearInterval(timer);
+    };
+  }, [isComplete, onComplete]);
+
+  return (
+    <div className="min-h-[300px] flex items-center justify-center">
+      <div className="text-center space-y-6">
+        <div className="relative w-32 h-32 mx-auto">
+          {/* Outer rotating circle */}
+          <div className="absolute inset-0 rounded-full border-4 border-purple-200 border-dashed animate-spin-slow"></div>
+          
+          {/* Inner circle with countdown */}
+          <div className="absolute inset-2 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center">
+            <span className="text-4xl font-bold text-white">{count}</span>
+          </div>
+        </div>
+        
+        <div className="space-y-3">
+          <h2 className="text-2xl font-bold text-gray-800">
+            {count === 0 ? 'Ready!' : `Preparing Your Download${dots}`}
+          </h2>
+          <p className="text-gray-600">
+            {count === 0 ? 'Your download is ready' : "We're getting everything ready for you"}
+          </p>
+        </div>
+
+        {/* Progress bar */}
+        <div className="w-64 h-2 bg-gray-200 rounded-full mx-auto overflow-hidden">
+          <div 
+            className="h-full bg-gradient-to-r from-purple-600 to-blue-600 transition-all duration-1000 ease-linear"
+            style={{ width: `${((10 - count) / 10) * 100}%` }}
+          ></div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function DownloadComponent({ algo, id }: DownloadComponentProps) {
+  const [showDownload, setShowDownload] = useState(false);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
 
   const handleDownload = async () => {
@@ -90,109 +172,127 @@ export default function DownloadComponent({ algo, id }: DownloadComponentProps) 
   };
 
   return (
-    <>
-      <div className="container py-5">
-        {/* Download Section */}
-        <div className="bg-white rounded-lg shadow-lg p-5 mb-5 text-center">
-          <h2 className="text-2xl font-bold mb-4">
-            <span className="text-purple-600">You Are About To Download: </span>
-          </h2>
-          <h3 className="text-xl mb-4">{algo.name}</h3>
-          <div className="mb-4">
-            <Image
-              src={downloads}
-              width={80}
-              height={80}
-              alt="Download icon"
-              className="mx-auto hover:scale-105 transition-transform duration-300"
-            />
-          </div>
-          <button 
-            onClick={handleDownload}
-            className="btn btn-purple"
-          >
-            Download Now
-          </button>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 py-6 md:py-12 px-4">
+      <div className="max-w-7xl mx-auto space-y-6 md:space-y-12 mb-4">
+        {/* Conditional rendering of countdown or download section */}
+        <div className="bg-white rounded-xl md:rounded-2xl shadow-lg md:shadow-xl overflow-hidden">
+          {!showDownload ? (
+            <CountdownComponent onComplete={() => setShowDownload(true)} />
+          ) : (
+            <>
+              <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-6 md:p-8 text-white">
+                <h1 className="text-2xl md:text-3xl font-bold mb-2">Ready to Download</h1>
+                <p className="text-sm md:text-base text-purple-100">You're about to download a powerful trading algorithm</p>
+              </div>
+              
+              <div className="p-6 md:p-8">
+                <div className="flex flex-col md:flex-row items-center gap-6 md:gap-8">
+                  <div className="flex-1 text-center md:text-left">
+                    <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-2 md:mb-3">{algo.name}</h2>
+                    <p className="text-sm md:text-base text-gray-600 mb-4 md:mb-6">
+                      {algo.description.length > 200 ? `${algo.description.slice(0, 197)}...` : algo.description}
+                    </p>
+                    
+                    <button 
+                      onClick={handleDownload}
+                      className="w-full md:w-auto inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 font-medium"
+                    >
+                      <Download className="w-5 h-5 mr-2" />
+                      Download Now
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
-        {/* Promotional Section */}
-        {/* Promotional Section */}
-        <div className="mb-5">
-          <h4 className="text-center text-xl font-semibold mb-6 text-gray-800">
-              Maximize your trading potential with these exclusive offers from Tachys VPS
-          </h4>
-          
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* VPS Card */}
-              <div className="transform hover:scale-105 transition-transform duration-300">
-              <div className="h-full bg-white rounded-lg shadow-md border-2 border-purple-200 hover:border-purple-500">
-                  <Link href="" className="block h-full">
-                  <div className="p-6 text-center">
-                      <h2 className="text-xl font-bold text-purple-600 mb-3">
-                      20% Discount VPS
-                      </h2>
-                      <p className="text-gray-600">
-                      Boost performance with Tachys VPS now at a discount!
-                      </p>
-                  </div>
-                  </Link>
-              </div>
-              </div>
-
-              {/* Signals Card */}
-              <div className="transform hover:scale-105 transition-transform duration-300">
-              <div className="h-full bg-white rounded-lg shadow-md border-2 border-purple-200 hover:border-purple-500">
-                  <Link href="" className="block h-full">
-                  <div className="p-6 text-center">
-                      <h2 className="text-xl font-bold text-purple-600 mb-3">
-                      Premium Signals
-                      </h2>
-                      <p className="text-gray-600">
-                      Accurate signals for consistent profits
-                      </p>
-                  </div>
-                  </Link>
-              </div>
-              </div>
-
-              {/* Prop Firm Card */}
-              <div className="transform hover:scale-105 transition-transform duration-300">
-              <div className="h-full bg-white rounded-lg shadow-md border-2 border-purple-200 hover:border-purple-500">
-                  <Link href="" className="block h-full">
-                  <div className="p-6 text-center">
-                      <h2 className="text-xl font-bold text-purple-600 mb-3">
-                      Prop Firm Challenge
-                      </h2>
-                      <p className="text-gray-600">
-                      Prove your skills & get funded. Start your prop firm challenge now
-                      </p>
-                  </div>
-                  </Link>
-              </div>
-              </div>
-
-              {/* Forex Broker Card */}
-              <div className="transform hover:scale-105 transition-transform duration-300">
-              <div className="h-full bg-white rounded-lg shadow-md border-2 border-purple-200 hover:border-purple-500">
-                  <Link href="" className="block h-full">
-                  <div className="p-6 text-center">
-                      <h2 className="text-xl font-bold text-purple-600 mb-3">
-                      Forex Broker
-                      </h2>
-                      <p className="text-gray-600">
-                      100% deposit bonus with our partner broker, double your capital
-                      </p>
-                  </div>
-                  </Link>
-              </div>
-              </div>
+        {/* Become a Seller Section */}
+        <div className="bg-white rounded-xl md:rounded-2xl shadow-lg md:shadow-xl p-6 md:p-8">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Become a Seller
+            </h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Join our marketplace and start monetizing your trading algorithms. Create, sell and grow your business with us.
+            </p>
           </div>
+
+          <div className="mt-8 text-center">
+            <Link 
+              href="/v6/seller"
+              className="inline-flex items-center px-8 py-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 text-lg font-medium"
+            >
+              Start Selling
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </Link>
           </div>
+        </div>
+
+        {/* Additional Services Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* VPS Hosting Card */}
+          <Link href="/plans/lite" className="group">
+            <div className="h-full bg-white rounded-lg shadow-md p-3 hover:shadow-lg transition-all duration-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Cpu className="w-5 h-5 text-purple-600" />
+                <h3 className="text-lg font-semibold text-gray-800 truncate">VPS Hosting</h3>
+              </div>
+              <p className="text-sm text-gray-600 mb-2">High-performance VPS optimized for trading</p>
+              <span className="text-purple-600 group-hover:text-purple-700 font-medium inline-flex items-center text-sm">
+                Learn more <ArrowRight className="w-4 h-4 ml-1" />
+              </span>
+            </div>
+          </Link>
+
+          {/* Premium Signals Card */}
+          <Link href="/signals" className="group">
+            <div className="h-full bg-white rounded-lg shadow-md p-3 hover:shadow-lg transition-all duration-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Globe2 className="w-5 h-5 text-purple-600" />
+                <h3 className="text-lg font-semibold text-gray-800 truncate">Premium Signals</h3>
+              </div>
+              <p className="text-sm text-gray-600 mb-2">Get accurate trading signals daily</p>
+              <span className="text-purple-600 group-hover:text-purple-700 font-medium inline-flex items-center text-sm">
+                Learn more <ArrowRight className="w-4 h-4 ml-1" />
+              </span>
+            </div>
+          </Link>
+
+          {/* Prop Firm Card */}
+          <Link href="/prop-firm" className="group">
+            <div className="h-full bg-white rounded-lg shadow-md p-3 hover:shadow-lg transition-all duration-200">
+              <div className="flex items-center gap-2 mb-2">
+                <ShoppingBag className="w-5 h-5 text-purple-600" />
+                <h3 className="text-lg font-semibold text-gray-800 truncate">Prop Firm</h3>
+              </div>
+              <p className="text-sm text-gray-600 mb-2">Get funded up to $100,000</p>
+              <span className="text-purple-600 group-hover:text-purple-700 font-medium inline-flex items-center text-sm">
+                Learn more <ArrowRight className="w-4 h-4 ml-1" />
+              </span>
+            </div>
+          </Link>
+
+          {/* Forex Broker Card */}
+          <Link href="/broker" className="group">
+            <div className="h-full bg-white rounded-lg shadow-md p-3 hover:shadow-lg transition-all duration-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Server className="w-5 h-5 text-purple-600" />
+                <h3 className="text-lg font-semibold text-gray-800 truncate">Forex Broker</h3>
+              </div>
+              <p className="text-sm text-gray-600 mb-2">100% deposit bonus for new accounts</p>
+              <span className="text-purple-600 group-hover:text-purple-700 font-medium inline-flex items-center text-sm">
+                Learn more <ArrowRight className="w-4 h-4 ml-1" />
+              </span>
+            </div>
+          </Link>
+        </div>
       </div>
+
       <PremiumMembershipModal 
         isOpen={showPremiumModal}
         onClose={() => setShowPremiumModal(false)}
       />
-    </>
+    </div>
   );
 } 

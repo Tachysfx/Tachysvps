@@ -416,7 +416,7 @@ const PostCard = ({
   return (
     <div 
       id={`post-${post.id}`}
-      className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 mb-4"
+      className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 mb-2"
     >
       {/* Post Header */}
       <div className="p-3">
@@ -606,11 +606,11 @@ const PostCard = ({
               {formattedContent.title}
             </h2>
           )}
-          <p className="text-gray-800 px-3 text-justify">
+          <div className="text-gray-800 px-3 text-justify whitespace-pre-wrap">
             {formattedContent.content.length > 250 ? (
               <>
                 {showMore 
-                  ? formattedContent.content 
+                  ? formattedContent.content
                   : `${formattedContent.content.substring(0, 250)}...`}
                 <button
                   onClick={() => setShowMore(!showMore)}
@@ -622,7 +622,7 @@ const PostCard = ({
             ) : (
               formattedContent.content
             )}
-          </p>
+          </div>
         </div>
 
         {/* Engagement Stats */}
@@ -1501,6 +1501,28 @@ export default function BlogPage() {
 
   // Filter out hidden posts from the display
   const visiblePosts = posts.filter(post => !hiddenPosts.includes(post.id));
+
+  useEffect(() => {
+    const postId = sessionStorage.getItem('scrollToPost');
+    if (postId) {
+      // Clear the stored ID
+      sessionStorage.removeItem('scrollToPost');
+      
+      // Wait for posts to load and DOM to update
+      const timer = setTimeout(() => {
+        const postElement = document.getElementById(`post-${postId}`);
+        if (postElement) {
+          postElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          postElement.classList.add('post-highlight');
+          setTimeout(() => {
+            postElement.classList.remove('post-highlight');
+          }, 2000);
+        }
+      }, 1000); // Adjust timing if needed
+
+      return () => clearTimeout(timer);
+    }
+  }, [posts]); // Depend on posts to ensure they're loaded
 
   return (
     <div className="min-h-screen bg-gray-100 pb-8 pt-2 relative">

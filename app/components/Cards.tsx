@@ -26,7 +26,7 @@ export default function Cards() {
                     alt="Years icon" 
                     className='me-3'
                   />
-                  <span className="text-purple fw-bold"><CountUp end={6} duration={2.5} />+</span>
+                  <span className="text-purple fw-bold"><CountUp end={5} duration={2.5} />+</span>
                 </h2>
                 <h6 className="card-text text-muted">Years of Operation</h6>
               </div>

@@ -13,6 +13,7 @@ import {
 import { toast } from 'react-toastify'
 import { db } from "../../functions/firebase"
 import { doc, getDoc, collection, query, where, getDocs, addDoc, updateDoc } from "firebase/firestore"
+import Loading from '../../loading'
 
 interface WithdrawalData {
   availableBalance: number;
@@ -209,11 +210,7 @@ const WithdrawalPage = () => {
   }
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600"></div>
-      </div>
-    )
+    return <Loading />
   }
 
   return (

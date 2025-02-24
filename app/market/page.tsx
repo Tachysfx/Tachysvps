@@ -13,6 +13,8 @@ import {
   Users,
   BarChart2,
   HeadphonesIcon,
+  Code,
+  LineChart,
 } from "lucide-react";
 import MarketClient from '../components/Display';
 import MarketFrontData from '../lib/MarketFrontData';
@@ -134,36 +136,116 @@ export default async function Market(){
           {/* <!-- Right Column --> */}
           <div className="col-12 col-lg-10">
             <div className="content-right">
-              <h5>Algo Market for Trading Robots, Expert Advisors, Indicators, Copy Trading and Trading Applications</h5>
-              <div className="row border-bottom">
-                {/* <!-- First Column --> */}
-                <div className="d-none d-lg-block col-lg-1 px-0 smalz">
-                  <Image
-                    src={baller}
-                    width={65}
-                    height={90}
-                    alt="blur"
-                    className="mx-auto ps-2"
-                  />
+              {/* Intro Section Start */}
+              <div className="py-3">
+                {/* Header */}
+                <div className="text-center mb-3">
+                  <h1 className="text-3xl md:text-4xl font-bold mb-2 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                    Algorithm Marketplace
+                  </h1>
+                  <h2 className="text-xl md:text-2xl text-gray-700 font-medium">
+                    Trading Bots • Expert Advisors • Technical Indicators • Copy Trading Systems
+                  </h2>
                 </div>
 
-                {/* <!-- Main Content Column --> */}
-                <div className="col-12 col-lg-8 px-0 text-center">
-                  <p>
-                    Every day, hundreds of new automated trading solutions emerge in the forex market. Select the ideal algorithm from thousands of options, and eliminate the hassle of manual trading routines. Trading robots operate automatically in the markets, while indicators analyze price quotes to identify patterns and trends. These tools empower you to make better-informed trading decisions and seize more opportunities.
-                  </p>
-                </div>
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                  <div className="row items-center">
+                    {/* Left Column - Image */}
+                    <div className="d-none d-lg-flex col-lg-2 justify-content-center">
+                      <div className="relative">
+                        <Image
+                          src={baller}
+                          width={120}
+                          height={120}
+                          alt="Algorithm marketplace"
+                          className="rounded-xl"
+                        />
+                        <div className="absolute -bottom-2 -right-2 bg-purple-600 text-white text-xs px-2 py-1 rounded-full">
+                          Verified
+                        </div>
+                      </div>
+                    </div>
 
-                {/* <!-- Third Column --> */}
-                <div className="d-none d-lg-block col-lg-3 pe-2 mb-2 smalz">
-                  <p className="mb-1 pb-1">
-                    Sign up as a Seller to publish your trading applications. Showcase and sell your algorithms, trading robots, and Expert Advisors (EAs) in our store.
-                  </p>
-                  <Link href="./v6/seller" type='button' className="btn btn-sm btn-purple d-flex justify-content-center mx-3">
-                    Register
-                  </Link>
+                    {/* Middle Column - Main Content */}
+                    <div className="col-12 col-lg-7">
+                      <div className="space-y-4">
+                        <p className="text-gray-600 leading-relaxed">
+                          Welcome to the premier destination for professional trading algorithms. Our expertly curated marketplace brings together the most sophisticated automated trading bots, cutting-edge technical indicators, and proven copy trading systems. Discover why thousands of traders trust our marketplace to enhance their trading journey:
+                        </p>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+                              <Code className="w-4 h-4 text-purple-600" />
+                            </div>
+                            <span className="text-sm text-gray-700">Trading Bots</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                              <LineChart className="w-4 h-4 text-blue-600" />
+                            </div>
+                            <span className="text-sm text-gray-700">Indicators</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
+                              <Users className="w-4 h-4 text-green-600" />
+                            </div>
+                            <span className="text-sm text-gray-700">Copy Trading</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
+                              <Users className="w-4 h-4 text-orange-600" />
+                            </div>
+                            <span className="text-sm text-gray-700">Signals</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Column - CTA */}
+                    <div className="col-12 col-lg-3 mt-6 lg:mt-0">
+                      <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl p-4 text-center">
+                        <h3 className="font-semibold text-gray-800 mb-2">
+                          Become a Seller
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-4">
+                          Share your trading algorithms and earn. Join our growing community of algorithm developers.
+                        </p>
+                        <Link 
+                          href="./v6/seller" 
+                          className="inline-flex items-center justify-center gap-2 w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200"
+                        >
+                          <ShoppingBag className="w-4 h-4" />
+                          Start Selling
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stats Bar */}
+                  <div className="mt-8 pt-6 border-t border-gray-100">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-purple-600">1,000+</div>
+                        <div className="text-sm text-gray-600">Active Algorithms</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-purple-600">1.2K+</div>
+                        <div className="text-sm text-gray-600">Monthly Users</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-purple-600">100%</div>
+                        <div className="text-sm text-gray-600">Satisfaction Rate</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-purple-600">24/7</div>
+                        <div className="text-sm text-gray-600">Support Available</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
+              {/* Intro Section End */}
 
               <MarketClient enrichedAlgos={enrichedAlgos} />
             </div>

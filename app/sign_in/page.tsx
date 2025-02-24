@@ -99,13 +99,26 @@ export default function SignInPage() {
   // Store the previous path when component mounts
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      // First try to get path from referrer
       const referrer = document.referrer;
       if (referrer && referrer.includes(window.location.origin)) {
         const path = new URL(referrer).pathname;
         if (path !== '/sign_in') {
           setPreviousPath(path);
+          return;
         }
       }
+
+      // If no valid referrer, check localStorage
+      const savedPath = localStorage.getItem('previousPath');
+      if (savedPath && savedPath !== '/sign_in') {
+        setPreviousPath(savedPath);
+        localStorage.removeItem('previousPath'); // Clean up after using
+        return;
+      }
+
+      // Default to home if no previous path found
+      setPreviousPath('/');
     }
   }, []);
 
@@ -251,10 +264,13 @@ export default function SignInPage() {
         icon: 'success',
         title: 'Welcome!',
         text: 'Your account has been created successfully.',
-        confirmButtonColor: '#7A49B7'
+        confirmButtonColor: '#7A49B7',
+        timer: 1500,
+        timerProgressBar: true,
+        showConfirmButton: false
       });
 
-      window.location.href = '/';
+      window.location.href = previousPath;
     } catch (err: any) {
       if (err.code === "auth/email-already-in-use") {
         toast.error("This email is already registered. Please try logging in instead.");
@@ -388,23 +404,17 @@ export default function SignInPage() {
             showConfirmButton: false
           });
 
-          // Redirect to previous path or home
-          window.location.href = previousPath || '/';
+          // Redirect to previous path
+          window.location.href = previousPath;
         }
       } catch (error) {
-        console.error("Detailed error in handleRedirectResult:", {
-          error,
-          message: error.message,
-          code: error.code,
-          stack: error.stack
-        });
+        console.error("Detailed error in handleRedirectResult:", error);
         toast.error(`Authentication failed: ${error.message}`);
       }
     };
 
-    // Call handleRedirectResult when component mounts
     handleRedirectResult();
-  }, []); // Empty dependency array to run only once on mount
+  }, [previousPath]); // Add previousPath to dependencies
 
   // Modify the Google sign in function
   const signInGoogle = async () => {
@@ -570,59 +580,110 @@ export default function SignInPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-100 via-white to-blue-100">
-      <div className="container mx-auto px-4 py-16 flex flex-col lg:flex-row items-center justify-center gap-12">
-        {/* Left side - Branding and Info */}
-        <div className="lg:w-1/2 max-w-md">
-          <div className="text-center lg:text-left">
-            <h1 className="text-4xl lg:text-6xl font-bold">
-              <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                Tachys
-              </span>
-              <span className="text-gray-800">
-                VPS
-              </span>
-            </h1>
-            <p className="mt-4 text-lg text-gray-600">
-              Experience high-performance VPS hosting and advanced trading solutions. Where traders and developers unite to innovate and succeed.
-            </p>
-            <div className="mt-8 space-y-6 hidden lg:block">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
-                  <Server className="w-6 h-6 text-purple-600" />
+      <div className="container mx-auto px-4 py-16 flex flex-col lg:flex-row items-center justify-center gap-6">
+        {/* Left side - Enhanced Branding and Info */}
+        <div className="lg:w-1/2 max-w-2xl">
+          <div className="text-center lg:text-left space-y-4">
+            {/* Main Heading */}
+            <div>
+              <h1 className="text-4xl lg:text-6xl font-bold tracking-tight">
+                <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                  Tachys
+                </span>
+                <span className="text-gray-800">VPS</span>
+              </h1>
+              <p className="mt-4 text-lg text-gray-600 leading-relaxed">
+                Enterprise-grade Virtual Private Servers for every professional need. 
+                Powered by NVMe storage and ultra-low latency networks across global data centers.
+              </p>
+            </div>
+
+            {/* Feature Grid - Hidden on mobile */}
+            <div className="hidden md:grid grid-cols-2 gap-6">
+              {/* Trading & Finance */}
+              <div className="bg-white/50 backdrop-blur-sm p-6 rounded-xl border border-purple-100 hover:border-purple-200 transition-all duration-300">
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center">
+                    <LineChart className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-800">Trading & Finance</h3>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-gray-800">High-Performance VPS</h3>
-                  <p className="text-gray-600">Reliable, lightning-fast hosting optimized for trading</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                  <LineChart className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-800">Trading Solutions</h3>
-                  <p className="text-gray-600">Cutting-edge applications for maximum trading potential</p>
-                </div>
+                <p className="text-gray-600 text-sm">
+                  Optimized for Forex, crypto trading, and algorithmic strategies. 
+                  Access our Algo Market for ready-to-use trading tools.
+                </p>
               </div>
 
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                  <Globe2 className="w-6 h-6 text-green-600" />
+              {/* Development */}
+              <div className="bg-white/50 backdrop-blur-sm p-6 rounded-xl border border-blue-100 hover:border-blue-200 transition-all duration-300">
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
+                    <Code className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-800">Development</h3>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-gray-800">Global Community</h3>
-                  <p className="text-gray-600">Connect with traders and developers worldwide</p>
-                </div>
+                <p className="text-gray-600 text-sm">
+                  Perfect for web development, testing, and CI/CD pipelines. 
+                  Full root access and custom environment support.
+                </p>
               </div>
 
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center">
-                  <Cpu className="w-6 h-6 text-indigo-600" />
+              {/* Business Solutions */}
+              <div className="bg-white/50 backdrop-blur-sm p-6 rounded-xl border border-green-100 hover:border-green-200 transition-all duration-300">
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
+                    <Server className="w-6 h-6 text-green-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-800">Business Solutions</h3>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-gray-800">Technical Excellence</h3>
-                  <p className="text-gray-600">State-of-the-art infrastructure for optimal performance</p>
+                <p className="text-gray-600 text-sm">
+                  Host databases, web applications, and business software with 
+                  99.99% uptime guarantee and DDoS protection.
+                </p>
+              </div>
+
+              {/* Gaming & Streaming */}
+              <div className="bg-white/50 backdrop-blur-sm p-6 rounded-xl border border-indigo-100 hover:border-indigo-200 transition-all duration-300">
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="w-12 h-12 rounded-lg bg-indigo-100 flex items-center justify-center">
+                    <Globe2 className="w-6 h-6 text-indigo-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-800">Gaming & Streaming</h3>
+                </div>
+                <p className="text-gray-600 text-sm">
+                  Low-latency game servers and media streaming solutions with 
+                  unlimited bandwidth and global reach.
+                </p>
+              </div>
+            </div>
+
+            {/* Highlights Section */}
+            <div className="bg-white/70 backdrop-blur-sm p-6 rounded-xl border border-gray-200">
+              <h4 className="font-semibold text-gray-800 mb-4">Why Choose Tachys VPS?</h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-purple-600" />
+                  <span className="text-sm text-gray-600">24/7 Support</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-purple-600" />
+                  <span className="text-sm text-gray-600">DDoS Protection</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Cpu className="w-4 h-4 text-purple-600" />
+                  <span className="text-sm text-gray-600">NVMe Storage</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Server className="w-4 h-4 text-purple-600" />
+                  <span className="text-sm text-gray-600">Global CDN</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <LineChart className="w-4 h-4 text-purple-600" />
+                  <span className="text-sm text-gray-600">Algo Market</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Code className="w-4 h-4 text-purple-600" />
+                  <span className="text-sm text-gray-600">Root Access</span>
                 </div>
               </div>
             </div>
@@ -632,7 +693,7 @@ export default function SignInPage() {
         {/* Right side - Auth Form */}
         <div className="w-full lg:w-1/2 max-w-md">
           <div className="bg-white rounded-2xl shadow-xl p-8">
-            <div className="mb-8 text-center">
+            <div className="mb-2 text-center">
               <h2 className="text-2xl font-bold text-gray-900">
                 {formType === 'login' ? 'Sign in to your account' : 
                  formType === 'signup' ? 'Create a new account' : 
@@ -653,6 +714,28 @@ export default function SignInPage() {
               </p>
             </div>
 
+            {/* Auth Forms */}
+            {renderForm()}
+
+            {/* Footer Links */}
+            <div className="mt-6 text-center">
+              <button
+                onClick={() => setFormType('forgot')}
+                className="text-sm text-gray-600 hover:text-purple-600 transition-colors duration-200"
+              >
+                Forgot your password?
+              </button>
+            </div>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Or continue with</span>
+              </div>
+            </div>
+
             {/* Social Login Buttons */}
             <div className="space-y-3 mb-6">
               <button
@@ -668,28 +751,6 @@ export default function SignInPage() {
               >
                 <Image src={imgGit} width={20} height={20} alt="GitHub" />
                 <span className="text-gray-700 font-medium">Continue with GitHub</span>
-              </button>
-            </div>
-
-            <div className="relative mb-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Or continue with</span>
-              </div>
-            </div>
-
-            {/* Auth Forms */}
-            {renderForm()}
-
-            {/* Footer Links */}
-            <div className="mt-6 text-center">
-              <button
-                onClick={() => setFormType('forgot')}
-                className="text-sm text-gray-600 hover:text-purple-600 transition-colors duration-200"
-              >
-                Forgot your password?
               </button>
             </div>
           </div>
