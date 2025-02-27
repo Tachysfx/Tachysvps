@@ -661,14 +661,20 @@ const PostCard = ({
             <Heart className={`w-5 h-5 ${user && post.likedBy?.includes(user.uid) ? 'fill-current' : ''}`} />
             <span className="font-medium">Like</span>
           </button>
-          <button 
+          
+          <button
             onClick={onComment}
-            className={`flex-1 flex items-center justify-center space-x-2 px-2 py-3 hover:bg-gray-50 rounded-lg text-gray-600 transition-colors ${
+            className={`flex-1 flex items-center justify-center gap-2 px-2 py-3 hover:bg-gray-50 transition-colors text-gray-600 ${
               post.comments.length > 0 ? 'text-purple-600' : ''
             }`}
           >
             <MessageSquare className={`w-5 h-5 ${post.comments.length > 0 ? 'fill-current' : ''}`} />
-            <span className="font-medium">Comment{post.comments.length > 0 ? ` (${post.comments.length})` : ''}</span>
+            <div className="flex items-center whitespace-nowrap">
+              <span>Comment</span>
+              {post.comments.length > 0 && (
+                <span className="ml-1">({post.comments.length})</span>
+              )}
+            </div>
           </button>
           <div className="flex-1 relative">
             <button 

@@ -236,7 +236,7 @@ export default function DownloadComponent({ algo, id }: DownloadComponentProps) 
             <div className="h-full bg-white rounded-lg shadow-md p-3 hover:shadow-lg transition-all duration-200">
               <div className="flex items-center gap-2 mb-2">
                 <Cpu className="w-5 h-5 text-purple-600" />
-                <h3 className="text-lg font-semibold text-gray-800 truncate">VPS Hosting</h3>
+                <h3 className="text-lg fs- font-semibold text-gray-800 whitespace-nowrap">VPS Hosting</h3>
               </div>
               <p className="text-sm text-gray-600 mb-2">High-performance VPS optimized for trading</p>
               <span className="text-purple-600 group-hover:text-purple-700 font-medium inline-flex items-center text-sm">
@@ -250,9 +250,9 @@ export default function DownloadComponent({ algo, id }: DownloadComponentProps) 
             <div className="h-full bg-white rounded-lg shadow-md p-3 hover:shadow-lg transition-all duration-200">
               <div className="flex items-center gap-2 mb-2">
                 <Globe2 className="w-5 h-5 text-purple-600" />
-                <h3 className="text-lg font-semibold text-gray-800 truncate">Premium Signals</h3>
+                <h3 className="text-lg fs- font-semibold text-gray-800 whitespace-nowrap">Signals</h3>
               </div>
-              <p className="text-sm text-gray-600 mb-2">Get accurate trading signals daily</p>
+              <p className="text-sm text-gray-600 mb-2">Get accurate premium trading signals daily</p>
               <span className="text-purple-600 group-hover:text-purple-700 font-medium inline-flex items-center text-sm">
                 Learn more <ArrowRight className="w-4 h-4 ml-1" />
               </span>
@@ -264,7 +264,7 @@ export default function DownloadComponent({ algo, id }: DownloadComponentProps) 
             <div className="h-full bg-white rounded-lg shadow-md p-3 hover:shadow-lg transition-all duration-200">
               <div className="flex items-center gap-2 mb-2">
                 <ShoppingBag className="w-5 h-5 text-purple-600" />
-                <h3 className="text-lg font-semibold text-gray-800 truncate">Prop Firm</h3>
+                <h3 className="text-lg fs- font-semibold text-gray-800 whitespace-nowrap">Prop Firm</h3>
               </div>
               <p className="text-sm text-gray-600 mb-2">Get funded up to $100,000</p>
               <span className="text-purple-600 group-hover:text-purple-700 font-medium inline-flex items-center text-sm">
@@ -278,7 +278,7 @@ export default function DownloadComponent({ algo, id }: DownloadComponentProps) 
             <div className="h-full bg-white rounded-lg shadow-md p-3 hover:shadow-lg transition-all duration-200">
               <div className="flex items-center gap-2 mb-2">
                 <Server className="w-5 h-5 text-purple-600" />
-                <h3 className="text-lg font-semibold text-gray-800 truncate">Forex Broker</h3>
+                <h3 className="text-lg fs- font-semibold text-gray-800 whitespace-nowrap">Forex Broker</h3>
               </div>
               <p className="text-sm text-gray-600 mb-2">100% deposit bonus for new accounts</p>
               <span className="text-purple-600 group-hover:text-purple-700 font-medium inline-flex items-center text-sm">

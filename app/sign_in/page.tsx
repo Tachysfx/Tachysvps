@@ -99,7 +99,15 @@ export default function SignInPage() {
   // Store the previous path when component mounts
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // First try to get path from referrer
+      // First try to get path from localStorage (set by AuthModal)
+      const authModalPath = localStorage.getItem('authModalRedirectPath');
+      if (authModalPath) {
+        setPreviousPath(authModalPath);
+        // Don't remove it yet - we'll remove after successful auth
+        return;
+      }
+
+      // Then try to get path from referrer
       const referrer = document.referrer;
       if (referrer && referrer.includes(window.location.origin)) {
         const path = new URL(referrer).pathname;
@@ -109,7 +117,7 @@ export default function SignInPage() {
         }
       }
 
-      // If no valid referrer, check localStorage
+      // If no valid referrer, check localStorage for regular redirects
       const savedPath = localStorage.getItem('previousPath');
       if (savedPath && savedPath !== '/sign_in') {
         setPreviousPath(savedPath);
@@ -120,24 +128,6 @@ export default function SignInPage() {
       // Default to home if no previous path found
       setPreviousPath('/');
     }
-  }, []);
-
-  // Add cleanup function for inactive users - Fixed version
-  useEffect(() => {
-    const cleanup = async () => {
-      const userSession = sessionStorage.getItem('user');
-      if (userSession) {
-        const user = JSON.parse(userSession);
-        const activeUserRef = ref(realtimeDb, `activeUsers/${user.uid}`);
-        await set(activeUserRef, null);
-      }
-    };
-
-    window.addEventListener('beforeunload', cleanup);
-    return () => {
-      window.removeEventListener('beforeunload', cleanup);
-      cleanup();
-    };
   }, []);
 
   // Also move the cleanup useEffect inside the component
@@ -161,7 +151,10 @@ export default function SignInPage() {
       showConfirmButton: false
     });
 
-    // Instead of using router.push, use window.location
+    // Clean up localStorage after successful auth
+    localStorage.removeItem('authModalRedirectPath');
+    
+    // Redirect to previous path
     window.location.href = previousPath;
   };
 

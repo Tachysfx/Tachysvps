@@ -451,15 +451,23 @@ export default function AuthModal({ isOpen, onRequestClose, disableBackgroundClo
     }
   };
 
+  const handleRedirectToSignIn = () => {
+    // Store the current path before redirecting
+    const currentPath = window.location.pathname;
+    if (currentPath !== '/sign_in') {
+      localStorage.setItem('authModalRedirectPath', currentPath);
+    }
+    
+    router.push('/sign_in');
+    onRequestClose();
+  };
+
   const handleCloseModal = () => {
     setEmail("");
     setPassword("");
     setModalIsOpen(false);
-    onRequestClose();
-  };
-
-  const handleRedirectToSignIn = () => {
-    router.push('/sign_in');
+    // Clean up stored path if user closes modal without proceeding
+    localStorage.removeItem('authModalRedirectPath');
     onRequestClose();
   };
 

@@ -46,7 +46,7 @@ const RatingStars = ({ rating }: { rating: number }) => (
 );
 
 const AlgoCard = ({ algo }: { algo: Algo }) => (
-  <div className="col-4 col-md-2 mb-2 px-1">
+  <div className="col-6 col-md-2 mb-2 px-1">
     <Link href={`/market/${algo.id}`} className="card-link">
       <div className="card hover-card">
         {/* Default View */}

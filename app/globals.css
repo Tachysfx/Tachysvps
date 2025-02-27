@@ -278,10 +278,7 @@ ul {
 }
   
 .service-item:hover {
-    background-image: url(/service-bg.jpg);
-    background-position: right top;
-    background-repeat: no-repeat;
-    background-size: cover;
+    background-color: #7A49B7;
 }
 
 .about-us {

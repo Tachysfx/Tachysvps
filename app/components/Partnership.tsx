@@ -136,39 +136,44 @@ export default function Partnership() {
   );
 
   const updatedCalculator = (
-    <div className="bg-white rounded-2xl shadow-lg border border-purple-100 p-8 mb-16">
-      <h2 className="text-2xl font-bold text-purple-600 mb-6 text-center">
-        Estimate Your Earnings
+    <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-3xl shadow-2xl p-10 mb-16">
+      <h2 className="text-3xl font-bold text-white mb-8 text-center">
+        Calculate Your Potential
       </h2>
-      <div className="max-w-md mx-auto">
-        <div className="mb-4">
-          <label className="block text-gray-700 font-medium mb-2">
-            Monthly Sales Volume ($)
-          </label>
+      <div className="max-w-xl mx-auto bg-white/10 backdrop-blur-lg rounded-2xl p-8">
+        <div className="bg-white/20 backdrop-blur p-8 rounded-xl text-center mb-6">
+          <p className="text-purple-100 text-lg mb-3">Estimated Monthly Earnings</p>
+          <p className="text-5xl font-bold text-white mb-2">
+            ${estimatedEarnings.toFixed(2)}
+          </p>
+          <p className="text-purple-200 text-sm">At 15% commission rate</p>
+        </div>
+        <label className="block text-white font-medium mb-3 text-lg">
+          Monthly Sales Volume ($)
+        </label>
+        <div className="relative">
           <input
             type="range"
-            className="w-full h-2 bg-purple-200 rounded-lg appearance-none cursor-pointer"
+            className="w-full h-3 bg-purple-200/30 rounded-full appearance-none cursor-pointer"
             min="0"
             max="1000"
             step="50"
             value={calculatorInput}
             onChange={handleCalculatorChange}
           />
-          <input
-            type="number"
-            className="w-full mt-4 px-4 py-2 border border-purple-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-            value={calculatorInput}
-            onChange={handleCalculatorChange}
-            min="0"
-          />
+          <div className="absolute -top-2 left-0 right-0 flex justify-between text-xs text-purple-200">
+            <span>$0</span>
+            <span>$500</span>
+            <span>$1000</span>
+          </div>
         </div>
-        <div className="bg-gradient-to-r from-purple-50 to-white p-6 rounded-lg text-center">
-          <p className="text-gray-600 mb-2">Your Monthly Earnings</p>
-          <p className="text-4xl font-bold text-purple-600">
-            ${estimatedEarnings.toFixed(2)}
-          </p>
-          <p className="text-sm text-gray-500 mt-2">Based on 15% commission rate</p>
-        </div>
+        <input
+          type="number"
+          className="w-full mt-6 px-6 py-4 bg-white/5 border-2 border-purple-300/20 rounded-xl focus:outline-none focus:border-purple-300/40 text-white text-xl text-center"
+          value={calculatorInput}
+          onChange={handleCalculatorChange}
+          min="0"
+        />
       </div>
     </div>
   );

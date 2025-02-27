@@ -40,6 +40,17 @@ const triggerAuthModal = () => {
   window.dispatchEvent(event);
 };
 
+// Add this function near the top of the component
+const handleLoginClick = (e: React.MouseEvent) => {
+  e.preventDefault();
+  // Store current path before redirecting
+  const currentPath = window.location.pathname;
+  if (currentPath !== '/sign_in') {
+    localStorage.setItem('authModalRedirectPath', currentPath);
+  }
+  window.location.href = '/sign_in';
+};
+
 export default function NavBar() {
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -174,7 +185,11 @@ export default function NavBar() {
         </Link>
       </li>
       <li className="nav-item separate" data-bs-dismiss="offcanvas" aria-label="Close">
-        <Link className="nav-link d-flex align-items-center px-3 py-2 hover:bg-purple-600 hover:text-white group" href="/sign_in">
+        <Link 
+          className="nav-link d-flex align-items-center px-3 py-2 hover:bg-purple-600 hover:text-white group" 
+          href="/sign_in"
+          onClick={handleLoginClick}
+        >
           <LogInIcon className="text-purple-600 w-5 h-5 me-3 group-hover:text-white" />
           Login
         </Link>
@@ -367,7 +382,11 @@ export default function NavBar() {
                     </Link>
                   ) : (
                     // Login button for non-authenticated users
-                    <Link className="nav-link" href="/sign_in">
+                    <Link 
+                      className="nav-link" 
+                      href="/sign_in"
+                      onClick={handleLoginClick}
+                    >
                       <button className='nav-butt'>
                         Login
                       </button>

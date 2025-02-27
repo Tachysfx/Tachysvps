@@ -508,3 +508,5 @@ export const formatDate = (date: Date | number | string): string => {
     return 'Just now';
   }
 };
+
+export type IconDefinition = any; // Replace 'any' with the correct type if known
