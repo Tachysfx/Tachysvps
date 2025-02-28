@@ -5,9 +5,10 @@ import Link from 'next/link';
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify"
 import { getAuth, signOut, sendEmailVerification, updatePassword } from "firebase/auth";
-import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, deleteDoc, arrayUnion } from "firebase/firestore";
 import { db } from '../../functions/firebase'; 
 import Swal from 'sweetalert2';
+import { storageService } from '../../functions/storage';
 
 const DEFAULT_PROFILE_IMAGE = "/user.png"; // or whatever default image you want to use
 
@@ -379,47 +380,50 @@ export default function Profile() {
       setIsUploading(true);
       const sessionUser = JSON.parse(sessionStorage.getItem('user') || '{}');
 
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('folder', 'Profile');
-      formData.append('access', 'private');
-      formData.append('collection', 'users');
-      formData.append('docId', sessionUser.uid);
-      formData.append('field', 'photoURL');
-
-      // If there's an existing profile photo, include its path for deletion
-      if (profile.photoURL && !profile.photoURL.startsWith('/')) {
-        formData.append('oldPath', profile.photoURL_path); // Add path for deletion
+      // Only proceed if we have a valid user
+      if (!sessionUser.uid) {
+        throw new Error('No user session found');
       }
 
-      const response = await fetch('/api/storage', {
-        method: 'POST',
-        body: formData,
+      // Check if current photo is from auth provider
+      const isAuthProviderPhoto = profile.photoURL?.includes('googleusercontent.com') || 
+                                 profile.photoURL?.includes('githubusercontent.com');
+
+      // Use the new updateProfileImage method
+      const result = await storageService.updateProfileImage(file, {
+        access: 'public',
+        folder: 'Profile',
+        token: process.env.BLOB_READ_WRITE_TOKEN || '',
+        currentPhotoURL: isAuthProviderPhoto ? undefined : profile.photoURL,
+        currentPhotoPath: isAuthProviderPhoto ? undefined : profile.photoURL_path,
+        dbUpdate: {
+          collection: 'users',
+          docId: sessionUser.uid,
+          field: 'photoURL'
+        }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to upload image');
-      }
+      // Update Firestore
+      const userRef = doc(db, 'users', sessionUser.uid);
+      await updateDoc(userRef, {
+        photoURL: result.url,
+        photoURL_path: result.path,
+        // Add activity for profile update
+        activities1: arrayUnion({
+          action: "Profile Update",
+          date: new Date().toISOString(),
+          details: "Updated profile picture"
+        })
+      });
 
-      const data = await response.json();
-      if (data.success) {
-        // Update profile with both URL and path
-        const userRef = doc(db, 'users', sessionUser.uid);
-        await updateDoc(userRef, {
-          photoURL: data.url,
-          photoURL_path: data.path // Store the path for future deletion
-        });
+      // Update local state
+      setProfile(prev => ({
+        ...prev,
+        photoURL: result.url,
+        photoURL_path: result.path
+      }));
 
-        setProfile(prev => ({
-          ...prev,
-          photoURL: data.url,
-          photoURL_path: data.path
-        }));
-
-        toast.success('Profile picture updated successfully');
-      } else {
-        throw new Error('Upload failed');
-      }
+      toast.success('Profile picture updated successfully');
     } catch (error) {
       console.error('Error uploading image:', error);
       toast.error('Failed to update profile picture');

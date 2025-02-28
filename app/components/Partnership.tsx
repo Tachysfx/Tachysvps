@@ -16,12 +16,12 @@ import { motion } from 'framer-motion';
 
 export default function Partnership() {
   const [calculatorInput, setCalculatorInput] = useState(100);
-  const [estimatedEarnings, setEstimatedEarnings] = useState(15);
+  const [estimatedEarnings, setEstimatedEarnings] = useState(10);
 
   const handleCalculatorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = Number(e.target.value);
     setCalculatorInput(value);
-    setEstimatedEarnings((value * 15) / 100);
+    setEstimatedEarnings((value * 10) / 100);
   };
 
   const statsSection = (
@@ -31,7 +31,7 @@ export default function Partnership() {
           { number: "500+", label: "Active Partners" },
           { number: "$50K+", label: "Paid to Partners" },
           { number: "24/7", label: "Support Available" },
-          { number: "15%", label: "Commission Rate" },
+          { number: "10%", label: "Commission Rate" },
         ].map((stat, index) => (
           <motion.div
             key={index}
@@ -146,7 +146,7 @@ export default function Partnership() {
           <p className="text-5xl font-bold text-white mb-2">
             ${estimatedEarnings.toFixed(2)}
           </p>
-          <p className="text-purple-200 text-sm">At 15% commission rate</p>
+          <p className="text-purple-200 text-sm">At 10% commission rate</p>
         </div>
         <label className="block text-white font-medium mb-3 text-lg">
           Monthly Sales Volume ($)
@@ -187,7 +187,7 @@ export default function Partnership() {
             Join the Tachys VPS Partnership Program
           </h1>
           <p className="text-xl text-purple-100 mb-8">
-            Earn up to 15% profit split for every successful referral or reseller sale
+            Earn up to 10% profit split for every successful referral or reseller sale
           </p>
           <Link 
             href="/v6/affiliates" 
@@ -232,7 +232,7 @@ export default function Partnership() {
                   <Check className="text-purple-600 mt-1 mr-3" size={20} />
                   <div>
                     <strong className="text-purple-600">High Commission Rates: </strong>
-                    <span className="text-gray-600">Enjoy an industry-leading 15% profit split on every sale you generate, ensuring substantial earnings.</span>
+                    <span className="text-gray-600">Enjoy an industry-leading 10% profit split on every sale you generate, ensuring substantial earnings.</span>
                   </div>
                 </div>
 
@@ -306,7 +306,7 @@ export default function Partnership() {
             {
               icon: DollarSign,
               title: "Generous Profit Split",
-              description: "Earn 15% profit on every successful sale."
+              description: "Earn 10% profit on every successful sale."
             },
             {
               icon: PieChart,
@@ -361,7 +361,7 @@ export default function Partnership() {
                 {[
                   "Sign up for discounted packages.",
                   "Set your pricing and sell Tachys services.",
-                  "Earn 15% profit on net revenue.",
+                  "Earn 0% profit on net revenue.",
                   "Leverage exclusive reseller resources.",
                   "FYI, minimum withdrawal is $1",
                 ].map((step, index) => (

@@ -510,3 +510,18 @@ export const formatDate = (date: Date | number | string): string => {
 };
 
 export type IconDefinition = any; // Replace 'any' with the correct type if known
+
+export interface StorageResult {
+  url: string;
+  path: string;
+  metadata?: {
+    contentType: string;
+    size: number;
+    [key: string]: any;
+  };
+}
+
+export interface ProfileUpdateOptions extends StorageOptions {
+  currentPhotoURL?: string;
+  currentPhotoPath?: string;
+}

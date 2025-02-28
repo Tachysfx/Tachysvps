@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { put, del, head } from '@vercel/blob';
-import { StorageService } from '../../functions/storage';
 
 export async function POST(req: NextRequest) {
   try {
@@ -108,6 +107,12 @@ export async function DELETE(request: NextRequest) {
     const data = await request.json();
     const { path, access = 'private' } = data;
 
+    console.log('DELETE request received:', {
+      path,
+      access,
+      timestamp: new Date().toISOString()
+    });
+
     if (!path) {
       return NextResponse.json(
         { success: false, error: 'Missing path parameter' },
@@ -126,13 +131,42 @@ export async function DELETE(request: NextRequest) {
     const formattedPath = decodeURIComponent(path);
     
     try {
+      // First check if the file exists
+      console.log('Checking if file exists:', formattedPath);
+      const exists = await head(formattedPath, {
+        token: process.env.BLOB_READ_WRITE_TOKEN
+      }).catch((error) => {
+        console.log('Head check error:', error);
+        return null;
+      });
+
+      if (!exists) {
+        console.log(`File not found: ${formattedPath}`);
+        return NextResponse.json({ 
+          success: true, 
+          message: 'File already deleted or does not exist',
+          path: formattedPath
+        });
+      }
+
+      // Proceed with deletion
+      console.log('Deleting file:', formattedPath);
       await del(formattedPath, {
         token: process.env.BLOB_READ_WRITE_TOKEN
       });
       
-      return NextResponse.json({ success: true });
+      console.log(`Successfully deleted: ${formattedPath}`);
+      return NextResponse.json({ 
+        success: true,
+        message: 'File deleted successfully',
+        path: formattedPath
+      });
     } catch (error) {
-      console.error('Blob deletion error:', error);
+      console.error('Blob deletion error:', {
+        error,
+        path: formattedPath,
+        timestamp: new Date().toISOString()
+      });
       return NextResponse.json({ 
         success: false, 
         error: 'Failed to delete from blob storage',
@@ -143,7 +177,8 @@ export async function DELETE(request: NextRequest) {
     console.error('Delete request error:', error);
     return NextResponse.json({ 
       success: false, 
-      error: 'Invalid request' 
+      error: 'Invalid request',
+      details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 400 });
   }
 } 

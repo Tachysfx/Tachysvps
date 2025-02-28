@@ -1,3 +1,5 @@
+"use client"
+
 import CardSideBar from '../../components/SideBar';
 import ReactMarkdown from 'react-markdown';
 import { db } from '../../functions/firebase';

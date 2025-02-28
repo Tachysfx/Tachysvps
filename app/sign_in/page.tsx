@@ -29,7 +29,8 @@ import {
   browserLocalPersistence,
   setPersistence,
   GoogleAuthProvider,
-  GithubAuthProvider
+  GithubAuthProvider,
+  signInWithPopup
 } from 'firebase/auth';
 import { auth, db, googleAuthProvider, githubAuthProvider, logAnalyticsEvent, realtimeDb } from '../functions/firebase';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
@@ -253,6 +254,21 @@ export default function SignInPage() {
         })
       );
 
+      // Send welcome email
+      await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          template: 'WELCOME',
+          data: {
+            name: email.split('@')[0], // or user.displayName if available
+            email: email
+          },
+        }),
+      });
+
       await Swal.fire({
         icon: 'success',
         title: 'Welcome!',
@@ -410,33 +426,196 @@ export default function SignInPage() {
   }, [previousPath]); // Add previousPath to dependencies
 
   // Modify the Google sign in function
-  const signInGoogle = async () => {
-    setIsLoading(true);
+  const signInGoogle = async (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+    e.preventDefault();
+
     try {
-      await setPersistence(auth, browserLocalPersistence);
-      const provider = new GoogleAuthProvider();
-      provider.addScope('email');
-      provider.addScope('profile');
-      await signInWithRedirect(auth, provider);
+      const res = await signInWithPopup(auth, googleAuthProvider);
+      const user = res.user;
+
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+      const lastLogin = new Date().toISOString();
+
+      if (!userDoc.exists()) {
+        const signUpActivity = {
+          action: "Account Creation",
+          date: lastLogin,
+          details: "New account created with Google"
+        };
+
+        const location = await getUserLocation();
+        await setDoc(userDocRef, {
+          email: user.email,
+          name: user.displayName,
+          photoURL: user.photoURL,
+          verification: user.emailVerified,
+          createdAt: lastLogin,
+          lastLogin: lastLogin,
+          location: location,
+          activities1: [signUpActivity],
+          role: Role.Normal // Set default role for new users
+        });
+
+        await Swal.fire({
+          icon: 'success',
+          title: 'Welcome!',
+          text: 'Your account has been created successfully.',
+          confirmButtonColor: '#7A49B7'
+        });
+      }
+
+      const role = await checkAndUpdateUserRole(userDocRef);
+      const currentActivities = userDoc.exists() ? userDoc.data()?.activities1 || [] : [];
+        const loginActivity = {
+          action: "Login",
+          date: lastLogin,
+          details: "Login with Google"
+        };
+
+        const location = await getUserLocation();
+        await updateDoc(userDocRef, {
+          lastLogin: lastLogin,
+          location: location,
+          activities1: [loginActivity, ...currentActivities].slice(0, 5)
+        });
+
+      sessionStorage.setItem(
+        "user",
+        JSON.stringify({
+          uid: user.uid,
+          email: user.email,
+          verification: user.emailVerified,
+          role: role
+        })
+      );
+
+      // Send welcome email for new users
+      if (!userDoc.exists()) {
+        await fetch('/api/contact', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            template: 'WELCOME',
+            data: {
+              name: user.displayName || user.email?.split('@')[0] || 'there',
+              email: user.email!
+            },
+          }),
+        });
+      }
+
+      window.location.href = previousPath;
+      
+      // Add user to active users in realtime database
+      await updateActiveStatus(user.uid, user.email!, user.displayName);
+
     } catch (err) {
-      console.error("Google sign in error:", err);
-      toast.error("Failed to sign in with Google. Please try again.");
-      setIsLoading(false);
+      const error = err as { code?: string };
+      if (error.code === "auth/popup-closed-by-user") {
+        toast.info("Sign-in cancelled.");
+      } else {
+        toast.error("Failed to sign in with Google. Please try again.");
+      }
+      console.error("Error during Google sign-in:", error);
     }
   };
 
   // Modify the GitHub sign in function
-  const signInGitHub = async () => {
-    setIsLoading(true);
+  const signInGitHub = async (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+    e.preventDefault();
+
     try {
-      await setPersistence(auth, browserLocalPersistence);
-      const provider = new GithubAuthProvider();
-      provider.addScope('user:email');
-      await signInWithRedirect(auth, provider);
+      const res = await signInWithPopup(auth, githubAuthProvider);
+      const user = res.user;
+
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+      const lastLogin = new Date().toISOString();
+      const location = await getUserLocation();
+
+      if (!userDoc.exists()) {
+        const signUpActivity = {
+          action: "Account Creation",
+          date: lastLogin,
+          details: "New account created with GitHub"
+        };
+
+        await setDoc(userDocRef, {
+          email: user.email,
+          name: user.displayName,
+          photoURL: user.photoURL,
+          verification: user.emailVerified,
+          createdAt: lastLogin,
+          lastLogin: lastLogin,
+          location: location,
+          activities1: [signUpActivity],
+          role: Role.Normal // Set default role for new users
+        });
+
+        await Swal.fire({
+          icon: 'success',
+          title: 'Welcome!',
+          text: 'Your account has been created successfully.',
+          confirmButtonColor: '#7A49B7'
+        });
+      }
+
+      const role = await checkAndUpdateUserRole(userDocRef);
+      const currentActivities = userDoc.exists() ? userDoc.data()?.activities1 || [] : [];
+        const loginActivity = {
+          action: "Login",
+          date: lastLogin,
+          details: "Login with GitHub"
+        };
+
+        await updateDoc(userDocRef, {
+          lastLogin: lastLogin,
+          location: location,
+          activities1: [loginActivity, ...currentActivities].slice(0, 5)
+        });
+
+      sessionStorage.setItem(
+        "user",
+        JSON.stringify({
+          uid: user.uid,
+          email: user.email,
+          verification: user.emailVerified,
+          role: role
+        })
+      );
+
+      // Send welcome email for new users
+      if (!userDoc.exists()) {
+        await fetch('/api/contact', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            template: 'WELCOME',
+            data: {
+              name: user.displayName || user.email?.split('@')[0] || 'there',
+              email: user.email!
+            },
+          }),
+        });
+      }
+
+      window.location.href = previousPath;
+      
+      await updateActiveStatus(user.uid, user.email!, user.displayName);
+
     } catch (err) {
-      console.error("GitHub sign in error:", err);
-      toast.error("Failed to sign in with GitHub. Please try again.");
-      setIsLoading(false);
+      const error = err as { code?: string };
+      if (error.code === "auth/popup-closed-by-user") {
+        toast.info("Sign-in cancelled.");
+      } else {
+        toast.error("Failed to sign in with GitHub. Please try again.");
+      }
+      console.error("Error during GitHub sign-in:", error);
     }
   };
 

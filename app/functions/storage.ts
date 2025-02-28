@@ -249,25 +249,46 @@ export class StorageService {
   }
 
   /**
-   * Delete a file from Vercel Blob storage with improved error handling
+   * Delete a file from storage
    */
   async deleteFile(path: string, options: StorageOptions): Promise<void> {
     try {
-      // Ensure path is properly formatted
-      const formattedPath = decodeURIComponent(path);
-      
+      if (!path) {
+        throw new Error('Path is required for deletion');
+      }
+
+      // Extract pathname from URL if the path looks like a URL
+      let pathToDelete = path;
+      if (path.startsWith('http')) {
+        try {
+          const url = new URL(path);
+          pathToDelete = url.pathname.startsWith('/') ? url.pathname.slice(1) : url.pathname;
+        } catch (error) {
+          console.warn('Failed to parse URL:', path);
+        }
+      }
+
+      console.log('Delete attempt:', {
+        originalPath: path,
+        pathToDelete,
+        decodedPath: decodeURIComponent(pathToDelete),
+        options,
+        timestamp: new Date().toISOString()
+      });
+
       const response = await fetch('/api/storage', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          path: formattedPath,
+        body: JSON.stringify({
+          path: decodeURIComponent(pathToDelete),
           access: options.access
         })
       });
 
       const data = await response.json();
+      console.log('Delete response:', data);
       
       if (!data.success) {
         throw new Error(data.error || 'Delete operation failed');
@@ -277,11 +298,19 @@ export class StorageService {
       if (options.dbUpdate) {
         const { collection, docId, field } = options.dbUpdate;
         const docRef = doc(db, collection, docId);
-        await updateDoc(docRef, { [field]: null });
+        await updateDoc(docRef, { 
+          [field]: null,
+          [`${field}_path`]: null
+        });
       }
     } catch (error) {
-      console.error('Delete error:', error);
-      throw new Error('Failed to delete file');
+      console.error('Delete error:', {
+        error,
+        path,
+        options,
+        timestamp: new Date().toISOString()
+      });
+      throw error;
     }
   }
 
@@ -317,6 +346,46 @@ export class StorageService {
       throw new Error('Failed to list files');
     }
   }
+
+  /**
+   * Handle profile image update with proper blob management
+   */
+  async updateProfileImage(file: File, options: StorageOptions & {
+    currentPhotoURL?: string;
+    currentPhotoPath?: string;
+  }): Promise<{url: string; path: string}> {
+    try {
+      const { currentPhotoURL, currentPhotoPath, ...uploadOptions } = options;
+
+      // Only delete old image if it's from blob storage
+      if (currentPhotoURL && isBlobStorageUrl(currentPhotoURL)) {
+        try {
+          await this.deleteFile(currentPhotoURL, {
+            access: 'public',
+            folder: 'Profile',
+            token: this.token,
+            dbUpdate: options.dbUpdate
+          });
+        } catch (error) {
+          console.warn('Failed to delete old profile image:', error);
+          // Continue with upload even if delete fails
+        }
+      }
+
+      // Upload new image
+      return await this.uploadFile(file, {
+        ...uploadOptions,
+        folder: 'Profile',
+        metadata: {
+          purpose: 'profile',
+          contentType: file.type
+        }
+      });
+    } catch (error) {
+      console.error('Profile image update error:', error);
+      throw new Error('Failed to update profile image');
+    }
+  }
 }
 
 export const storageService = StorageService.getInstance();
@@ -337,6 +406,7 @@ export const getAlgoImageUrl = async (folder: string, fileName: string): Promise
 
 export const uploadAlgoImage = async (file: File): Promise<{ url: string; fileName: string } | null> => {
   try {
+    // Should handle old image deletion if replacing
     const formData = new FormData();
     formData.append('file', file);
     formData.append('folder', 'algo-images');
@@ -393,6 +463,84 @@ export const getVideoUrl = async (folder: string, fileName: string): Promise<str
     const data = await response.json();
     return data.success ? data.url : null;
   } catch (error) {
+    return null;
+  }
+};
+
+// Add a helper function to check if URL is from blob storage
+export const isBlobStorageUrl = (url: string): boolean => {
+  try {
+    if (!url) return false;
+    // Check for both possible Vercel Blob URL patterns
+    const isBlob = url.includes('.public.blob.vercel-storage') || 
+                  url.includes('.blob.vercel-storage');
+    console.log('URL check:', { 
+      url, 
+      isBlob,
+      urlParts: url.split('/')
+    });
+    return isBlob;
+  } catch (error) {
+    console.warn('Invalid URL in blob check:', url);
+    return false;
+  }
+};
+
+// Add this helper function
+export const replaceAlgoImage = async (
+  file: File, 
+  oldImageUrl?: string, 
+  oldImagePath?: string
+): Promise<{ url: string; fileName: string } | null> => {
+  try {
+    // Delete old image if it exists
+    if (oldImageUrl && oldImagePath && isBlobStorageUrl(oldImageUrl)) {
+      await storageService.deleteFile(oldImageUrl, {
+        access: 'public',
+        folder: 'algo-images',
+        token: process.env.BLOB_READ_WRITE_TOKEN || ''
+      });
+    }
+
+    // Upload new image
+    return await uploadAlgoImage(file);
+  } catch (error) {
+    console.error('Replace algo image error:', error);
+    return null;
+  }
+};
+
+// Add this helper function
+export const replaceVideo = async (
+  file: File,
+  oldVideoUrl?: string,
+  oldVideoPath?: string,
+  oldThumbnailUrl?: string,
+  generateThumbnail = true
+): Promise<{ url: string; path: string; thumbnail?: string } | null> => {
+  try {
+    // Delete old video and thumbnail if they exist
+    if (oldVideoUrl && oldVideoPath && isBlobStorageUrl(oldVideoUrl)) {
+      await storageService.deleteFile(oldVideoUrl, {
+        access: 'public',
+        folder: 'videos',
+        token: process.env.BLOB_READ_WRITE_TOKEN || ''
+      });
+
+      // Delete old thumbnail if it exists
+      if (oldThumbnailUrl && isBlobStorageUrl(oldThumbnailUrl)) {
+        await storageService.deleteFile(oldThumbnailUrl, {
+          access: 'public',
+          folder: 'thumbnails',
+          token: process.env.BLOB_READ_WRITE_TOKEN || ''
+        });
+      }
+    }
+
+    // Upload new video
+    return await uploadVideo(file, generateThumbnail);
+  } catch (error) {
+    console.error('Replace video error:', error);
     return null;
   }
 }; 

@@ -30,7 +30,7 @@ import {
   Square,
   AlertOctagon
 } from 'lucide-react';
-import { VPSStatus, isValidStatusTransition } from '@/app/types';
+import { VPSStatus, isValidStatusTransition } from "../../types";
 import Swal from 'sweetalert2';
 import {
   Chart as ChartJS,

@@ -50,7 +50,7 @@ import {
 } from 'react-share';
 import { Role } from "../types/index";
 import AuthModal from '../components/AuthModal';
-import { storageService } from '../functions/storage';
+import { storageService, isBlobStorageUrl } from '../functions/storage';
 
 interface Post {
   id: string;
@@ -1208,25 +1208,28 @@ export default function BlogPage() {
   };
 
   const handleCreatePost = async () => {
-    if (handleAuthRequired('post')) return;
-
     try {
       const user = auth.currentUser;
-      if (!user) return;
+      if (!user) {
+        setAuthAction('post');
+        setShowAuthModal(true);
+        return;
+      }
 
       // Upload images
       const uploadedImages = await Promise.all(
         newImages.map(async (image) => {
           const result = await storageService.uploadFile(image, {
             folder: 'Posts',
-            access: 'private',
-            token: '',
+            access: 'public',
+            token: process.env.BLOB_READ_WRITE_TOKEN || '',
             metadata: {
               userId: user.uid,
-              contentType: image.type
+              contentType: image.type,
+              purpose: 'post'
             }
           });
-          return result ? { url: result.url, path: result.path } : null;
+          return { url: result.url, path: result.path };
         })
       );
 
@@ -1235,27 +1238,28 @@ export default function BlogPage() {
         newVideos.map(async (video) => {
           const result = await storageService.uploadVideo(video, {
             folder: 'Posts',
-            access: 'private',
-            token: '',
+            access: 'public',
+            token: process.env.BLOB_READ_WRITE_TOKEN || '',
             generateThumbnail: true,
             metadata: {
               userId: user.uid,
-              contentType: video.type
+              contentType: video.type,
+              purpose: 'post'
             }
           });
-          return result ? {
+          return {
             url: result.url,
             path: result.path,
             thumbnail: result.thumbnail
-          } : null;
+          };
         })
       );
 
-      // Create post with filtered uploads
+      // Create post document
       await addDoc(collection(db, 'posts'), {
         content: newPost,
-        images: uploadedImages.filter(Boolean),
-        videos: uploadedVideos.filter(Boolean),
+        images: uploadedImages,
+        videos: uploadedVideos,
         authorId: user.uid,
         author: {
           name: userProfile.name,
@@ -1271,12 +1275,6 @@ export default function BlogPage() {
         comments: [],
         likedBy: []
       });
-
-      setNewPost('');
-      setNewImages([]);
-      setNewVideos([]);
-      setShowCreatePost(false);
-      toast.success('Post created successfully!');
     } catch (error) {
       console.error('Error creating post:', error);
       toast.error('Failed to create post');
@@ -1457,33 +1455,49 @@ export default function BlogPage() {
   const handleDelete = async (postId: string) => {
     try {
       const user = auth.currentUser;
-      if (!user) {
-        toast.error('Please login to delete posts');
-        return;
-      }
+      if (!user) return;
 
-      if (user && userProfile.role !== Role.Admin) {
-        toast.error('Only admins can delete posts');
-        return;
-      }
-
-      // Get the post data first to access its images
+      // Get the post data
       const postRef = doc(db, 'posts', postId);
       const postDoc = await getDoc(postRef);
       const postData = postDoc.data();
 
-      // Delete all images associated with the post using deleteOldFile utility
-      if (postData?.images && postData.images.length > 0) {
-        try {
-          // await deleteOldFile(postData.images);
-        } catch (error) {
-          console.error('Error deleting post images:', error);
-          toast.error('Failed to delete post images');
-          return;
-        }
+      // Delete images if they exist
+      if (postData?.images?.length) {
+        await Promise.all(postData.images.map(async (image: { url: string; path: string }) => {
+          if (isBlobStorageUrl(image.url)) {
+            await storageService.deleteFile(image.url, {
+              access: 'public',
+              folder: 'Posts',
+              token: process.env.BLOB_READ_WRITE_TOKEN || ''
+            });
+          }
+        }));
       }
 
-      // Delete the post document
+      // Delete videos if they exist
+      if (postData?.videos?.length) {
+        await Promise.all(postData.videos.map(async (video: { url: string; path: string; thumbnail?: string }) => {
+          if (isBlobStorageUrl(video.url)) {
+            await storageService.deleteFile(video.url, {
+              access: 'public',
+              folder: 'Posts',
+              token: process.env.BLOB_READ_WRITE_TOKEN || ''
+            });
+
+            // Delete thumbnail if exists
+            if (video.thumbnail && isBlobStorageUrl(video.thumbnail)) {
+              await storageService.deleteFile(video.thumbnail, {
+                access: 'public',
+                folder: 'Posts',
+                token: process.env.BLOB_READ_WRITE_TOKEN || ''
+              });
+            }
+          }
+        }));
+      }
+
+      // Delete post document
       await deleteDoc(postRef);
       logAnalyticsEvent('post_deleted', { postId });
       toast.success('Post deleted successfully');

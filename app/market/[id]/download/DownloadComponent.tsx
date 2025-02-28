@@ -150,7 +150,7 @@ export default function DownloadComponent({ algo, id }: DownloadComponentProps) 
       link.click();
       link.remove();
 
-      // If user hasn't downloaded this algo before, update counts
+      // If user hasn't downloaded this algo before, update counts and send email
       if (!downloads.includes(id)) {
         // Update user's downloads array
         await updateDoc(userDocRef, {
@@ -161,6 +161,22 @@ export default function DownloadComponent({ algo, id }: DownloadComponentProps) 
         const algoDocRef = doc(db, 'algos', id);
         await updateDoc(algoDocRef, {
           downloads: increment(1)
+        });
+
+        // Send congratulatory email
+        await fetch('/api/contact', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            template: 'DOWNLOAD_CONGRATS',
+            data: {
+              name: userData.name || user.email?.split('@')[0] || 'there',
+              email: user.email,
+              algoName: algo.name
+            },
+          }),
         });
       }
 

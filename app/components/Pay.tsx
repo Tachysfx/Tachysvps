@@ -685,7 +685,6 @@ export default function Pay({ plan }: PayProps): React.ReactElement {
 
       // Calculate final price with referral discount if applicable
       const basePrice = calculatePrice();
-      const finalPrice = referrerType ? basePrice * 0.9 : basePrice;
 
       // Prepare VPS plan data
       const vpsPlanData = {
@@ -698,7 +697,7 @@ export default function Pay({ plan }: PayProps): React.ReactElement {
         os,
         backupStorage,
         monitoring,
-        price: finalPrice, // Use the same price calculation as shown in Order Summary
+        price: basePrice, // Use the same price calculation as shown in Order Summary
         paymentType: type,
         status: "PendingPayment" as const,
         purchaseDate: "",
@@ -768,7 +767,7 @@ export default function Pay({ plan }: PayProps): React.ReactElement {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            amount: finalPrice,
+            amount: basePrice,
             type: 'payment',
             description: `Payment for ${quantity} ${selectedPlan} VPS (${length})`,
             customerEmail: sessionUser.email,

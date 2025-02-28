@@ -52,7 +52,7 @@ import type { LucideIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import React from 'react';
 import Loading from '../../loading';
-import { storageService } from '../../functions/storage';
+import { storageService, isBlobStorageUrl } from '../../functions/storage';
 
 ChartJS.register(
   CategoryScale,
@@ -348,52 +348,44 @@ export default function PostsDashboard() {
         return;
       }
 
-      setIsPosting(true);  // Set loading state
+      setIsPosting(true);
 
-      // Upload images first if any
+      // Upload images
       const uploadedImages = await Promise.all(
         newImages.map(async (image) => {
-          const formData = new FormData();
-          formData.append('file', image);
-          formData.append('folder', 'Posts');
-          formData.append('access', 'private');
-
-          const response = await fetch('/api/storage', {
-            method: 'POST',
-            body: formData
+          const result = await storageService.uploadFile(image, {
+            folder: 'Posts',
+            access: 'public',
+            token: process.env.BLOB_READ_WRITE_TOKEN || '',
+            metadata: {
+              userId: sessionUser.uid,
+              contentType: image.type,
+              purpose: 'post'
+            }
           });
-
-          const data = await response.json();
-          if (data.success) {
-            return {
-              url: data.url,
-              path: data.path
-            };
-          }
-          return null;
+          return { url: result.url, path: result.path };
         })
       );
 
-      // Upload video if exists
+      // Upload video
       let uploadedVideos = [];
       if (newVideos.length > 0) {
-        const formData = new FormData();
-        formData.append('file', newVideos[0]);
-        formData.append('folder', 'Posts');
-        formData.append('access', 'private');
-        formData.append('generateThumbnail', 'true');
-
-        const response = await fetch('/api/storage', {
-          method: 'POST',
-          body: formData
+        const result = await storageService.uploadVideo(newVideos[0], {
+          folder: 'Posts',
+          access: 'public',
+          token: process.env.BLOB_READ_WRITE_TOKEN || '',
+          generateThumbnail: true,
+          metadata: {
+            userId: sessionUser.uid,
+            contentType: newVideos[0].type,
+            purpose: 'post'
+          }
         });
-
-        const data = await response.json();
-        if (data.success) {
+        if (result) {
           uploadedVideos = [{
-            url: data.url,
-            path: data.path,
-            thumbnail: data.thumbnail
+            url: result.url,
+            path: result.path,
+            thumbnail: result.thumbnail
           }];
         }
       }
@@ -401,14 +393,14 @@ export default function PostsDashboard() {
       // Create post document
       await addDoc(collection(db, 'posts'), {
         content: newPostContent,
+        images: uploadedImages,
+        videos: uploadedVideos,
         authorId: sessionUser.uid,
         author: {
           name: userProfile.name,
           avatar: userProfile.avatar
         },
         createdAt: serverTimestamp(),
-        images: uploadedImages.filter(Boolean),
-        videos: uploadedVideos,
         likes: 0,
         comments: [],
         metrics: {
@@ -432,7 +424,7 @@ export default function PostsDashboard() {
       console.error('Error creating post:', error);
       toast.error('Failed to create post');
     } finally {
-      setIsPosting(false);  // Reset loading state
+      setIsPosting(false);
     }
   };
 
@@ -798,7 +790,7 @@ const PostCard = ({ post, onRefresh }: {
   };
 
   const handleEdit = async () => {
-    const result: SweetAlertResult<EditFormValues> = await Swal.fire({
+    const result = await Swal.fire({
       title: 'Edit Post',
       html: `
         <div class="p-1">
@@ -813,6 +805,30 @@ const PostCard = ({ post, onRefresh }: {
             >${post.content}</textarea>
           </div>
           
+          <!-- Current Images Section -->
+          ${post.images && post.images.length > 0 ? `
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Current Images</label>
+              <div class="grid grid-cols-3 gap-2">
+                ${post.images.map((image, index) => `
+                  <div class="relative rounded-lg overflow-hidden">
+                    <img src="${image.url}" class="w-full h-32 object-cover" />
+                    <button 
+                      type="button"
+                      onclick="removeExistingImage(${index})"
+                      class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                      </svg>
+                    </button>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+
+          <!-- Current Video Section -->
           ${post.videos && post.videos[0] ? `
             <div class="mb-4">
               <label class="block text-sm font-medium text-gray-700 mb-2">Current Video</label>
@@ -822,29 +838,56 @@ const PostCard = ({ post, onRefresh }: {
                   controls 
                   class="w-full h-auto max-h-[200px] object-contain"
                 ></video>
+                <button 
+                  type="button"
+                  onclick="removeExistingVideo()"
+                  class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                  </svg>
+                </button>
               </div>
             </div>
           ` : ''}
           
+          <!-- Add New Files Section -->
           <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              ${post.videos && post.videos[0] ? 'Replace Video' : 'Add Video'}
-            </label>
-            <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-purple-500 transition-colors">
-              <div class="space-y-1 text-center">
-                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
-                  <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-                <div class="flex text-sm text-gray-600">
-                  <label for="videos" class="relative cursor-pointer rounded-md font-medium text-purple-600 hover:text-purple-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-purple-500">
-                    <span>Upload a video</span>
-                    <input id="videos" type="file" accept="video/*" class="sr-only">
-                  </label>
-                </div>
-                <p class="text-xs text-gray-500">MP4, WebM up to 10MB</p>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Add New Files</label>
+            <div class="flex gap-4">
+              <div class="flex-1">
+                <input
+                  type="file"
+                  id="new-images"
+                  accept="image/*"
+                  multiple
+                  class="hidden"
+                  ${post.videos && post.videos.length ? 'disabled' : ''}
+                >
+                <label 
+                  for="new-images"
+                  class="cursor-pointer flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  Add Images
+                </label>
+              </div>
+              <div class="flex-1">
+                <input
+                  type="file"
+                  id="new-video"
+                  accept="video/*"
+                  class="hidden"
+                  ${post.images && post.images.length ? 'disabled' : ''}
+                >
+                <label 
+                  for="new-video"
+                  class="cursor-pointer flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  Add Video
+                </label>
               </div>
             </div>
-            <div id="video-preview" class="mt-2"></div>
+            <div id="new-files-preview" class="mt-4 grid grid-cols-3 gap-2"></div>
           </div>
         </div>
       `,
@@ -855,63 +898,118 @@ const PostCard = ({ post, onRefresh }: {
       customClass: {
         container: 'edit-post-modal',
         popup: 'rounded-xl shadow-xl max-w-2xl mx-auto',
-        title: 'text-xl font-semibold text-gray-800 border-b pb-3',
-        htmlContainer: 'pt-4',
         confirmButton: 'bg-purple-600 hover:bg-purple-700 px-6 py-2 rounded-lg text-white font-medium transition-colors',
         cancelButton: 'bg-gray-100 hover:bg-gray-200 px-6 py-2 rounded-lg text-gray-800 font-medium transition-colors',
-        actions: 'border-t pt-3 gap-3',
       },
       didOpen: () => {
-        const videoInput = document.getElementById('videos') as HTMLInputElement;
-        const previewContainer = document.getElementById('video-preview');
-        const contentTextarea = document.getElementById('content') as HTMLTextAreaElement;
-        
-        // Set initial height based on content
-        contentTextarea.style.height = 'auto';
-        const initialHeight = Math.min(contentTextarea.scrollHeight, 400);
-        contentTextarea.style.height = `${initialHeight}px`;
+        // Initialize state for tracking files
+        (window as any).editState = {
+          images: [...(post.images || [])],
+          video: post.videos?.[0] || null,
+          newImages: [],
+          newVideo: null
+        };
 
-        // Auto-resize on input, but respect max height
-        contentTextarea.addEventListener('input', () => {
-          contentTextarea.style.height = 'auto';
-          const newHeight = Math.min(contentTextarea.scrollHeight, 400);
-          contentTextarea.style.height = `${newHeight}px`;
+        // Handle removing existing images
+        (window as any).removeExistingImage = (index: number) => {
+          (window as any).editState.images = (window as any).editState.images.filter((_: any, i: number) => i !== index);
+          Swal.update();
+        };
+
+        // Handle removing existing video
+        (window as any).removeExistingVideo = () => {
+          (window as any).editState.video = null;
+          Swal.update();
+        };
+
+        // Handle new image uploads
+        const newImagesInput = document.getElementById('new-images') as HTMLInputElement;
+        const previewContainer = document.getElementById('new-files-preview');
+
+        newImagesInput?.addEventListener('change', (e) => {
+          const files = (e.target as HTMLInputElement).files;
+          if (files) {
+            (window as any).editState.newImages = Array.from(files);
+            updatePreview();
+          }
         });
-        
-        if (videoInput && previewContainer) {
-          videoInput.onchange = () => {
-            const files = videoInput.files;
-            if (files && files.length > 0) {
-              const urls = Array.from(files).map(file => URL.createObjectURL(file));
-              previewContainer.innerHTML = `
-                <div class="mt-4 space-y-2">
-                  ${urls.map((url, index) => `
-                    <div class="relative rounded-lg overflow-hidden bg-black">
-                      <video 
-                        src="${url}" 
-                        controls 
-                        class="w-full h-auto max-h-[200px] object-contain"
-                      ></video>
-                    </div>
-                  `).join('')}
-                </div>
-              `;
-            }
-          };
+
+        // Handle new video upload
+        const newVideoInput = document.getElementById('new-video') as HTMLInputElement;
+        newVideoInput?.addEventListener('change', (e) => {
+          const files = (e.target as HTMLInputElement).files;
+          if (files && files[0]) {
+            (window as any).editState.newVideo = files[0];
+            updatePreview();
+          }
+        });
+
+        function updatePreview() {
+          if (!previewContainer) return;
+
+          const newImagesPreview = (window as any).editState.newImages.map((file: File, index: number) => `
+            <div class="relative">
+              <img src="${URL.createObjectURL(file)}" class="w-full h-32 object-cover rounded-lg" />
+              <button 
+                type="button"
+                onclick="removeNewImage(${index})"
+                class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+          `).join('');
+
+          const newVideoPreview = (window as any).editState.newVideo ? `
+            <div class="relative col-span-3">
+              <video 
+                src="${URL.createObjectURL((window as any).editState.newVideo)}" 
+                controls 
+                class="w-full h-auto max-h-[200px] object-contain rounded-lg"
+              ></video>
+              <button 
+                type="button"
+                onclick="removeNewVideo()"
+                class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+          ` : '';
+
+          previewContainer.innerHTML = newImagesPreview + newVideoPreview;
         }
+
+        // Handle removing new files
+        (window as any).removeNewImage = (index: number) => {
+          (window as any).editState.newImages = (window as any).editState.newImages.filter((_: any, i: number) => i !== index);
+          updatePreview();
+        };
+
+        (window as any).removeNewVideo = () => {
+          (window as any).editState.newVideo = null;
+          updatePreview();
+        };
       },
-      preConfirm: () => {
+      preConfirm: async () => {
         const content = (document.getElementById('content') as HTMLTextAreaElement).value;
-        const videoFiles = (document.getElementById('videos') as HTMLInputElement).files;
+        const state = (window as any).editState;
         
-        if (!content.trim()) {
-          Swal.showValidationMessage('Please enter some content');
+        if (!content.trim() && !state.images.length && !state.video && !state.newImages.length && !state.newVideo) {
+          Swal.showValidationMessage('Please add some content, images, or video');
           return false;
         }
         
         return {
-          content: content,
-          videos: videoFiles ? Array.from(videoFiles) : []
+          content,
+          existingImages: state.images,
+          existingVideo: state.video,
+          newImages: state.newImages,
+          newVideo: state.newVideo
         };
       }
     });
@@ -920,49 +1018,63 @@ const PostCard = ({ post, onRefresh }: {
       try {
         const postRef = doc(db, 'posts', post.id);
         
-        // Handle video upload/update
-        let uploadedVideos = post.videos || [];
-        if (result.value.videos && result.value.videos.length > 0) {
-          // Delete old video if exists
-          if (post.videos && post.videos[0]) {
-            await fetch('/api/storage', {
-              method: 'DELETE',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ 
-                path: decodeURIComponent(post.videos[0].path),
-                access: 'private'
+        // Handle deleted files
+        const deletedImages = post.images?.filter(
+          img => !result.value.existingImages.includes(img)
+        ) || [];
+
+        const deletedVideo = post.videos?.[0] && !result.value.existingVideo ? post.videos[0] : null;
+
+        // Delete removed files from storage
+        await Promise.all([
+          ...deletedImages.map(img => 
+            isBlobStorageUrl(img.url) ? 
+              storageService.deleteFile(img.url, {
+                access: 'public',
+                folder: 'Posts',
+                token: process.env.BLOB_READ_WRITE_TOKEN || ''
+              }) : Promise.resolve()
+          ),
+          deletedVideo && isBlobStorageUrl(deletedVideo.url) ?
+            storageService.deleteFile(deletedVideo.url, {
+              access: 'public',
+              folder: 'Posts',
+              token: process.env.BLOB_READ_WRITE_TOKEN || ''
+            }) : Promise.resolve()
+        ]);
+
+        // Upload new files
+        const [newImages, newVideo] = await Promise.all([
+          Promise.all(
+            result.value.newImages.map((image: File) =>
+              storageService.uploadFile(image, {
+                folder: 'Posts',
+                access: 'public',
+                token: process.env.BLOB_READ_WRITE_TOKEN || ''
               })
-            });
-          }
-
-          // Upload new video
-          const formData = new FormData();
-          formData.append('file', result.value.videos[0]);
-          formData.append('folder', 'Posts');
-          formData.append('access', 'private');
-          formData.append('generateThumbnail', 'true');
-
-          const response = await fetch('/api/storage', {
-            method: 'POST',
-            body: formData
-          });
-
-          const data = await response.json();
-          if (data.success) {
-            uploadedVideos = [{
-              url: data.url,
-              path: data.path,
-              thumbnail: data.thumbnail
-            }];
-          }
-        }
+            )
+          ),
+          result.value.newVideo ?
+            storageService.uploadVideo(result.value.newVideo, {
+              folder: 'Posts',
+              access: 'public',
+              token: process.env.BLOB_READ_WRITE_TOKEN || '',
+              generateThumbnail: true
+            }) : Promise.resolve(null)
+        ]);
 
         // Update post document
         await updateDoc(postRef, {
           content: result.value.content,
-          videos: uploadedVideos,
+          images: [
+            ...result.value.existingImages,
+            ...newImages.map(img => ({ url: img.url, path: img.path }))
+          ],
+          videos: newVideo ? [{
+            url: newVideo.url,
+            path: newVideo.path,
+            thumbnail: newVideo.thumbnail
+          }] : (result.value.existingVideo ? [result.value.existingVideo] : []),
           isEdited: true,
           lastEditedAt: serverTimestamp()
         });
@@ -979,7 +1091,7 @@ const PostCard = ({ post, onRefresh }: {
 
   const handleDelete = async () => {
     try {
-      const confirmDelete = await Swal.fire({
+      const result = await Swal.fire({
         title: 'Are you sure?',
         text: "You won't be able to revert this!",
         icon: 'warning',
@@ -989,45 +1101,43 @@ const PostCard = ({ post, onRefresh }: {
         confirmButtonText: 'Yes, delete it!'
       });
 
-      if (confirmDelete.isConfirmed) {
-        // Delete video if exists
-        if (post.videos && post.videos[0]) {
-          const videoPath = `Posts/${post.videos[0].path.split('/').pop()}`; // Ensure folder structure
-          await fetch('/api/storage', {
-            method: 'DELETE',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ 
-              path: videoPath,
-              folder: 'Posts',
-              access: 'private'
-            })
-          });
-        }
-
-        // Delete images if they exist
-        if (post.images && post.images.length > 0) {
-          await Promise.all(post.images.map(image => {
-            const imagePath = `Posts/${image.path.split('/').pop()}`; // Ensure folder structure
-            return fetch('/api/storage', {
-              method: 'DELETE',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ 
-                path: imagePath,
+      if (result.isConfirmed) {
+        // Delete videos
+        if (post.videos?.length) {
+          await Promise.all(post.videos.map(async (video) => {
+            if (isBlobStorageUrl(video.url)) {
+              await storageService.deleteFile(video.url, {
+                access: 'public',
                 folder: 'Posts',
-                access: 'private'
-              })
-            });
+                token: process.env.BLOB_READ_WRITE_TOKEN || ''
+              });
+
+              if (video.thumbnail && isBlobStorageUrl(video.thumbnail)) {
+                await storageService.deleteFile(video.thumbnail, {
+                  access: 'public',
+                  folder: 'Posts',
+                  token: process.env.BLOB_READ_WRITE_TOKEN || ''
+                });
+              }
+            }
           }));
         }
-        
+
+        // Delete images
+        if (post.images?.length) {
+          await Promise.all(post.images.map(async (image) => {
+            if (isBlobStorageUrl(image.url)) {
+              await storageService.deleteFile(image.url, {
+                access: 'public',
+                folder: 'Posts',
+                token: process.env.BLOB_READ_WRITE_TOKEN || ''
+              });
+            }
+          }));
+        }
+
         // Delete post document
-        const postRef = doc(db, 'posts', post.id);
-        await deleteDoc(postRef);
-        
+        await deleteDoc(doc(db, 'posts', post.id));
         onRefresh();
         toast.success('Post deleted successfully');
       }
