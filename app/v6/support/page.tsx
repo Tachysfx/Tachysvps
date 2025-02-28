@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faSearch, faEnvelope, faPhone, 
-  faComments, faQuestionCircle, faClock 
+  faComments, faQuestionCircle, faClock, faHeart  
 } from '@fortawesome/free-solid-svg-icons';
 import { toast } from "react-toastify"
 import Link from 'next/link';
@@ -34,7 +34,7 @@ const SupportPage = () => {
           const firstLine = lines[0].trim();
           
           if (firstLine.startsWith('*')) {
-            const title = firstLine.slice(1).trim().split(' ').slice(0, 10).join(' ');
+            const title = firstLine.slice(1).trim().split(' ').slice(0, 18).join(' ');
             return {
               id: doc.id,
               title,
@@ -142,45 +142,98 @@ const SupportPage = () => {
 
         {/* Contact Information */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-          <div className="flex items-center mb-6">
-            <FontAwesomeIcon icon={faComments} className="text-purple-600 text-2xl mr-2" />
-            <h4 className="text-xl font-semibold text-gray-900">Contact Us</h4>
-          </div>
-
-          <div className="space-y-6">
-            <div className="flex items-start">
-              <FontAwesomeIcon icon={faClock} className="text-purple-500 text-2xl mt-1 mr-3" />
-              <div>
-                <h5 className="font-medium text-gray-900 mb-1">24/7 Support</h5>
-                <p className="text-gray-600 mb-1">Our team is here to help you anytime</p>
-              </div>
+          {/* Desktop View */}
+          <div className="hidden md:block">
+            <div className="flex items-center mb-6">
+              <FontAwesomeIcon icon={faComments} className="text-purple-600 text-2xl mr-2" />
+              <h4 className="text-xl font-semibold text-gray-900">Contact Us</h4>
             </div>
 
-            <div className="flex items-start">
-              <FontAwesomeIcon icon={faEnvelope} className="text-purple-500 text-2xl mt-1 mr-3" />
-              <div>
-                <h5 className="font-medium text-gray-900 mb-1">Email Support</h5>
-                <Link href="mailto:support@tachysvps.com" className="text-purple-600 hover:text-purple-700">
+            <div className="space-y-6">
+              <div className="flex items-start">
+                <FontAwesomeIcon icon={faClock} className="text-purple-500 text-2xl mt-1 mr-3" />
+                <div>
+                  <h5 className="font-medium text-gray-900 mb-1">24/7 Support</h5>
+                  <p className="text-gray-600 mb-1">Our team is here to help you anytime</p>
+                </div>
+              </div>
+
+              <div className="flex items-start">
+                <FontAwesomeIcon icon={faEnvelope} className="text-purple-500 text-2xl mt-1 mr-3" />
+                <div>
+                  <h5 className="font-medium text-gray-900 mb-1">Email Support</h5>
+                  <Link href="mailto:support@tachysvps.com" className="text-purple-600 hover:text-purple-700">
+                    support@tachysvps.com
+                  </Link>
+                </div>
+              </div>
+
+              <div className="flex items-start">
+                <FontAwesomeIcon icon={faPhone} className="text-purple-500 text-2xl mt-1 mr-3" />
+                <div>
+                  <h5 className="font-medium text-gray-900 mb-1">Phone Support</h5>
+                  <p className="text-gray-600">+44 2890 ***</p>
+                </div>
+              </div>
+
+              <div className="bg-purple-50 p-4 rounded-xl mt-6">
+                <h5 className="font-medium text-purple-600 mb-2">Average Response Times</h5>
+                <ul className="space-y-2 text-sm text-gray-600">
+                  <li>• Email Support: Within 5 mins</li>
+                  <li>• Phone Support: Immediate</li>
+                  <li>• Ticket System: Immediate</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile View */}
+          <div className="md:hidden">
+            <div className="text-center mb-6">
+              <FontAwesomeIcon icon={faComments} className="text-purple-600 text-3xl mb-3" />
+              <h4 className="text-xl font-semibold text-gray-900">Contact Us</h4>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="bg-purple-50 p-4 rounded-xl text-center">
+                <FontAwesomeIcon icon={faClock} className="text-purple-500 text-2xl mb-2" />
+                <h5 className="font-medium text-gray-900 text-sm text-center">24/7 Support</h5>
+              </div>
+
+              <div className="bg-purple-50 p-4 rounded-xl text-center">
+                <FontAwesomeIcon icon={faEnvelope} className="text-purple-500 text-2xl mb-2" />
+                <Link href="mailto:support@tachysvps.com" className="text-purple-600 hover:text-purple-700 text-sm block">
                   support@tachysvps.com
                 </Link>
               </div>
-            </div>
 
-            <div className="flex items-start">
-              <FontAwesomeIcon icon={faPhone} className="text-purple-500 text-2xl mt-1 mr-3" />
-              <div>
-                <h5 className="font-medium text-gray-900 mb-1">Phone Support</h5>
-                <p className="text-gray-600">+44 2890 ***</p>
+              <div className="bg-purple-50 p-4 rounded-xl text-center">
+                <FontAwesomeIcon icon={faPhone} className="text-purple-500 text-2xl mb-2" />
+                <p className="text-gray-900 text-sm text-center">+44 2890 ***</p>
+              </div>
+
+              <div className="bg-purple-50 p-4 rounded-xl text-center">
+                <FontAwesomeIcon icon={faHeart} className="text-red-500 text-2xl mb-2" />
+                <p className="text-gray-900 text-sm text-center">Thank You</p>
               </div>
             </div>
 
-            <div className="bg-purple-50 p-4 rounded-xl mt-6">
-              <h5 className="font-medium text-purple-600 mb-2">Average Response Times</h5>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li>• Email Support: Within 5 mins</li>
-                <li>• Phone Support: Immediate</li>
-                <li>• Ticket System: Immediate</li>
-              </ul>
+            <div className="bg-purple-100 p-4 rounded-xl">
+              <h5 className="font-medium text-purple-600 mb-3 text-center">Response Times</h5>
+              <div className="grid grid-cols-3 gap-2 text-xs text-center text-gray-700">
+                <div>
+                  <div className="font-medium mb-1">Email</div>
+                  <div>5 mins</div>
+                </div>
+                <div>
+                  <div className="font-medium mb-1">Phone</div>
+                  <div>Immediate</div>
+                </div>
+                <div>
+                  <div className="font-medium mb-1">Ticket</div>
+                  <div>Immediate</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

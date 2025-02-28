@@ -2,14 +2,14 @@
 **Version:** [Robot Version]  
 **Developer:** [Your Name/Company Name]  
 **Release Date:** [DD/MM/YYYY]  
-**Managed By:** Tachys FX/Tachys VPS  
+**Managed By:** Tachys VPS  
 
 ---
 
 ## 📄 Overview
 Provide a brief introduction to your robot. Describe its purpose, functionality, and what makes it unique. Include key selling points to attract buyers.
 
-> **Note:** This robot is hosted and managed exclusively by **Tachys FX/Tachys VPS** to ensure seamless integration, optimal performance, and compliance with our platform standards.
+> **Note:** This robot is hosted and managed exclusively by **Tachys VPS** to ensure seamless integration, optimal performance, and compliance with our platform standards.
 
 ---
 
@@ -35,7 +35,7 @@ Provide a brief introduction to your robot. Describe its purpose, functionality,
 - **Broker Type:** [e.g., ECN, Standard]  
 - **VPS Recommended:** [Yes/No]  
 
-> **Note:** Tachys FX/Tachys VPS ensures all robots are optimized for performance using high-quality VPS services.
+> **Note:** Tachys VPS ensures all robots are optimized for performance using high-quality VPS services.
 
 ---
 
@@ -63,7 +63,7 @@ If applicable, share live trading performance or myfxbook links.
 3. [Step 3: Attach the EA to the desired chart.]  
 4. [Step 4: Adjust settings to your preference.]  
 
-> **Note:** All installations and deployments are overseen by Tachys FX/Tachys VPS for maximum efficiency and security.
+> **Note:** All installations and deployments are overseen by Tachys VPS for maximum efficiency and security.
 
 ---
 
@@ -86,7 +86,7 @@ List all adjustable parameters/settings. Example:
 ## ⚠️ Disclaimer
 Trading Forex involves significant risk, and past performance is not indicative of future results. Ensure you understand the risks and only trade with funds you can afford to lose.  
 
-> **Ownership Note:** This robot and all associated intellectual property are hosted and managed by **Tachys FX/Tachys VPS**. Unauthorized distribution or replication is strictly prohibited.
+> **Ownership Note:** This robot and all associated intellectual property are hosted and managed by **Tachys VPS**. Unauthorized distribution or replication is strictly prohibited.
 
 ---
 
@@ -104,4 +104,4 @@ Trading Forex involves significant risk, and past performance is not indicative 
 
 ---
 
-**© 2025 Tachys FX/Tachys VPS. All Rights Reserved.**
+**© 2025 Tachys VPS. All Rights Reserved.**

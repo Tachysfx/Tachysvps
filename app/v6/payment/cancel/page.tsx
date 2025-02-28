@@ -1,12 +1,14 @@
 "use client";
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimesCircle } from '@fortawesome/free-solid-svg-icons';
 import Link from 'next/link';
 
 export default function PaymentCancelled() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnPath = searchParams.get('return_to');
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-white px-4">
@@ -24,12 +26,12 @@ export default function PaymentCancelled() {
           Your payment was cancelled. No charges have been made to your account.
         </p>
         <div className="space-y-4">
-          <Link
-            href="/v6/payment"
+          <button
+            onClick={() => returnPath ? router.push(returnPath) : router.back()}
             className="block w-full py-3 px-4 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"
           >
-            Try Again
-          </Link>
+            Return to Previous Page
+          </button>
           <Link
             href="/v6/support"
             className="block w-full py-3 px-4 border border-purple-600 text-purple-600 rounded-lg font-medium hover:bg-purple-50 transition-colors"

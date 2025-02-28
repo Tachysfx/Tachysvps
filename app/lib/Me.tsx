@@ -7,7 +7,8 @@ import { useEffect, useState } from "react";
 import { toast } from "react-toastify"
 import AuthModal from "../components/AuthModal";
 import { Role, User, Review, Comment } from "../types/index"
-import { Crown } from "lucide-react";
+import { Crown, CheckCircle } from "lucide-react";
+import Image from 'next/image';
 
 interface EnrichedAlgo {
   id: string;
@@ -106,7 +107,7 @@ const Deep = ({ enrichedAlgo, params }: DeepProps) => {
           email: user.email,
           role: user.role || Role.Normal,
           password: '',  // We don't store password in session for security
-          photoURl: user.photoURL || '',
+          photoURL: user.photoURL || '',
           location: {
             city: '',
             country: '',
@@ -688,7 +689,7 @@ const Deep = ({ enrichedAlgo, params }: DeepProps) => {
     );
   };
 
-  const UserRoleBadge = ({ userId, algoId }: { userId: string, algoId: string }) => {
+  const UserRoleBadge = ({ userId, algoId }: { userId: string; algoId: string }) => {
     const [userRole, setUserRole] = useState<Role>(Role.Normal);
     const [isSeller, setIsSeller] = useState(false);
 
@@ -701,11 +702,8 @@ const Deep = ({ enrichedAlgo, params }: DeepProps) => {
             setUserRole(userData.role);
 
             // Check if user is the seller of this algo
-            const algoDoc = await getDoc(doc(db, "algos", algoId));
-            if (algoDoc.exists()) {
-              const algoData = algoDoc.data();
-              setIsSeller(algoData.sellerId === userId);
-            }
+            const isSellerStatus = await checkIfSeller(userId);
+            setIsSeller(isSellerStatus);
           }
         } catch (error) {
           console.error("Error fetching user role:", error);
@@ -715,12 +713,16 @@ const Deep = ({ enrichedAlgo, params }: DeepProps) => {
     }, [userId, algoId]);
 
     return (
-      <>
+      <div className="flex items-center space-x-2">
         {isSeller && (
-          <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded">Seller</span>
+          <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded">
+            Seller
+          </span>
         )}
-        {userRole === Role.Premium && <Crown className="h-4 w-4 text-yellow-500" />}
-      </>
+        {userRole === Role.Premium && (
+          <Crown className="h-4 w-4 text-yellow-500" />
+        )}
+      </div>
     );
   };
 
@@ -740,7 +742,7 @@ const Deep = ({ enrichedAlgo, params }: DeepProps) => {
   }
 
   return (
-    <div>
+    <div id="reviews">
       <nav>
         <div className="nav nav-tabs mb-3" id="nav-tab" role="tablist">
           <button

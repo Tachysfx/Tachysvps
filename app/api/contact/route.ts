@@ -72,6 +72,7 @@ interface EmailTemplates {
     name: string;
     email: string;
     algoName: string;
+    productUrl: string;
   };
 }
 
@@ -114,11 +115,11 @@ const templates: {
     transporter: 'founder',
     generator: (data: EmailTemplates['WELCOME']) => ({
     to: data.email,
-      subject: 'Welcome to TachysVPS - Your Journey to Superior Performance Begins',
+      subject: 'Welcome to Tachys VPS - Your Journey to Superior Performance Begins',
     html: `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
           <div style="text-align: center; margin-bottom: 30px;">
-            <img src="https://tachysvps.com/logo.png" alt="TachysVPS Logo" width="40" height="40" style="margin: 0 auto; border-radius: 50%; object-fit: cover;">
+            <img src="https://tachysvps.com/logo.png" alt="Tachys VPS Logo" width="40" height="40" style="margin: 0 auto; border-radius: 50%; object-fit: cover;">
           </div>
           
           <div style="background: linear-gradient(135deg, #7A49B7, #9B6DDF); padding: 25px; border-radius: 12px; color: white; text-align: center; margin-bottom: 30px;">
@@ -127,7 +128,7 @@ const templates: {
           </div>
 
           <div style="margin: 30px 0;">
-            <p style="font-size: 16px; line-height: 1.6;">I'm Michael Genesis II, founder of TachysVPS, and I'm thrilled to welcome you to our cutting-edge platform.</p>
+            <p style="font-size: 16px; line-height: 1.6;">I'm Michael Genesis II, founder of Tachys VPS, and I'm thrilled to welcome you to our cutting-edge platform.</p>
             
             <div style="background: #f8f9fa; border-radius: 12px; padding: 25px; margin: 30px 0;">
               <h3 style="color: #7A49B7; margin-top: 0;">🚀 Your Success Stories Start Here</h3>
@@ -196,7 +197,7 @@ const templates: {
             <div style="margin-top: 30px;">
               <p style="margin: 0;">Best regards,</p>
               <p style="margin: 5px 0; font-weight: bold;">Michael Genesis II</p>
-              <p style="margin: 0; color: #666;">Founder & CEO, TachysVPS</p>
+              <p style="margin: 0; color: #666;">Founder & CEO, Tachys VPS</p>
             </div>
 
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: #666;">
@@ -273,82 +274,119 @@ const templates: {
       to: data.email,
       subject: `Congratulations on Your ${data.algoName} Download! 🎉`,
       html: `
-        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-          <div style="text-align: center; margin-bottom: 30px;">
-            <img src="https://tachysvps.com/logo.png" alt="TachysVPS Logo" width="40" height="40" style="margin: 0 auto; border-radius: 50%; object-fit: cover;">
+        <div style="font-family: 'Inter', 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
+          <div style="text-align: center; margin-bottom: 20px;">
+            <img src="https://tachysvps.com/logo.png" alt="Tachys VPS Logo" width="60" height="60" style="margin: 0 auto; border-radius: 12px; object-fit: cover;">
+          </div>
+          <div style="text-align: center; margin-bottom: 35px;">
+            <p style="font-size: 18px; color: #7A49B7; font-weight: 600; margin: 0;">Thank You for Choosing Tachys VPS</p>
           </div>
 
-          <h2 style="color: #7A49B7; border-bottom: 2px solid #7A49B7; padding-bottom: 10px; margin-top: 0;">
-            Thank You for Choosing TachysVPS!
-          </h2>
-
-          <div style="margin: 25px 0;">
-            <p>Dear ${data.name},</p>
-            
-            <p>Thank you for downloading <strong>${data.algoName}</strong>! We're excited to be part of your trading journey and committed to providing you with the best trading tools and support.</p>
-
-            <div style="background: #7A49B7; border-radius: 12px; padding: 25px; color: white; margin: 30px 0;">
-              <h3 style="margin-top: 0;">🌟 Exclusive Opportunity: Become a Seller!</h3>
-              <p>Turn your trading expertise into profit. Join our marketplace as a seller and:</p>
-              <ul style="list-style-type: none; padding: 0; margin: 0;">
-                <li style="margin: 15px 0; display: flex; align-items: center;">
-                  ✓ Earn passive income from your algorithms
-                </li>
-                <li style="margin: 15px 0; display: flex; align-items: center;">
-                  ✓ Get premium seller support
-                </li>
-                <li style="margin: 15px 0; display: flex; align-items: center;">
-                  ✓ Join our growing community
-                </li>
-              </ul>
-            </div>
-
-            <div style="background: #f8f9fa; border-radius: 12px; padding: 25px; margin: 30px 0;">
-              <h3 style="color: #7A49B7; margin-top: 0;">🎁 Refer & Earn Program</h3>
-              <p>Share the success with others and get rewarded:</p>
-              <ul style="list-style-type: none; padding: 0; margin: 0;">
-                <li style="margin: 10px 0;">✓ Earn 10% commission on each referral's purchase</li>
-                <li style="margin: 10px 0;">✓ Your referrals get 10% discount on their purchases</li>
-                <li style="margin: 10px 0;">✓ Get $5 Payoneer bonus for your first 3 referrals!</li>
-              </ul>
-              <a href="https://tachysvps.com/v6/affiliates" style="display: inline-block; background: #7A49B7; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin-top: 15px;">
-                Start Referring Now
-              </a>
-            </div>
-
-            <p>We're here to support your success every step of the way. If you need any assistance, our 24/7 support team is always ready to help!</p>
-
-            <p style="margin-top: 30px; font-style: italic;">
-              Best regards,<br>
-              The TachysVPS Team
+          <div style="background: linear-gradient(135deg, #8A56C3 0%, #7A49B7 100%); border-radius: 16px; padding: 35px; color: white; text-align: center; margin-bottom: 40px;">
+            <h1 style="font-size: 28px; margin: 0 0 15px 0; font-weight: 700;">
+              Download Complete! 🎉
+            </h1>
+            <p style="font-size: 18px; margin: 0; opacity: 0.9;">
+              Your journey with ${data.algoName} begins now
             </p>
           </div>
 
-          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: #666;">
-            <p>This is an automated message from a no-reply email address. Please do not reply to this email.<br>
-            For support, please email support@tachysvps.com</p>
+          <div style="margin: 30px 0;">
+            <p style="font-size: 16px; line-height: 1.6; color: #2D3748;">Dear ${data.name},</p>
             
-            <p style="margin: 15px 0 0 0;">
-              Follow us on: 
-              <a href="https://twitter.com/tachysvps" style="color: #7A49B7; text-decoration: none; margin: 0 5px; display: inline-flex; align-items: center;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+            <p style="font-size: 16px; line-height: 1.6; color: #2D3748;">Thank you for downloading <strong>${data.algoName}</strong>! We're thrilled to be part of your trading journey and are dedicated to providing you with exceptional trading tools and support.</p>
+
+            <div style="background: #F9F5FF; border: 1px solid #E9D8FD; border-radius: 16px; padding: 30px; margin: 35px 0;">
+              <h3 style="color: #7A49B7; margin: 0 0 20px 0; font-size: 20px;">🌟 Exclusive Seller Opportunity</h3>
+              <p style="color: #4A5568; margin: 0 0 20px 0;">Transform your trading expertise into a profitable venture:</p>
+              <ul style="list-style-type: none; padding: 0; margin: 0;">
+                <li style="margin: 12px 0; color: #4A5568; display: flex; align-items: center;">
+                  <span style="color: #7A49B7; margin-right: 10px;">✓</span> Generate passive income through algorithm sales
+                </li>
+                <li style="margin: 12px 0; color: #4A5568; display: flex; align-items: center;">
+                  <span style="color: #7A49B7; margin-right: 10px;">✓</span> Access dedicated seller support
+                </li>
+                <li style="margin: 12px 0; color: #4A5568; display: flex; align-items: center;">
+                  <span style="color: #7A49B7; margin-right: 10px;">✓</span> Be part of an elite trading community
+                </li>
+              </ul>
+            </div>
+
+            <div style="background: #7A49B7; border-radius: 16px; padding: 30px; margin: 35px 0; text-align: center;">
+              <h2 style="color: white; margin: 0 0 15px 0; font-size: 22px;">Share Your Experience ⭐</h2>
+              <p style="color: rgba(255,255,255,0.9); margin: 0 0 20px 0;">
+                Help fellow traders make informed decisions by sharing your experience
+              </p>
+              <a href="${data.productUrl}" 
+                style="display: inline-block; background: white; color: #7A49B7; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; transition: all 0.3s ease;">
+                Write a Review
+              </a>
+            </div>
+
+            <div style="background: #F7FAFC; border-radius: 16px; padding: 30px; margin: 35px 0;">
+              <h3 style="color: #7A49B7; margin: 0 0 20px 0; font-size: 20px;">🎁 Refer & Earn Rewards</h3>
+              <p style="color: #4A5568; margin: 0 0 20px 0;">Share success, earn rewards:</p>
+              <ul style="list-style-type: none; padding: 0; margin: 0;">
+                <li style="margin: 12px 0; color: #4A5568; display: flex; align-items: center;">
+                  <span style="color: #7A49B7; margin-right: 10px;">✓</span> Earn 10% commission per referral
+                </li>
+                <li style="margin: 12px 0; color: #4A5568; display: flex; align-items: center;">
+                  <span style="color: #7A49B7; margin-right: 10px;">✓</span> Your referrals get 10% off
+                </li>
+                <li style="margin: 12px 0; color: #4A5568; display: flex; align-items: center;">
+                  <span style="color: #7A49B7; margin-right: 10px;">✓</span> $5 bonus for first 3 referrals
+                </li>
+              </ul>
+              <a href="https://tachysvps.com/v6/affiliates" 
+                style="display: inline-block; background: #7A49B7; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; margin-top: 20px; transition: all 0.3s ease;">
+                Join Referral Program
+              </a>
+            </div>
+
+            <p style="font-size: 16px; line-height: 1.6; color: #2D3748;">Our 24/7 support team is here to ensure your success. Don't hesitate to reach out if you need any assistance!</p>
+
+            <p style="margin-top: 35px; color: #2D3748;">
+              Best regards,<br>
+              <strong style="color: #7A49B7;">The Tachys VPS Team</strong>
+            </p>
+          </div>
+
+          <div style="margin-top: 40px; padding-top: 30px; border-top: 1px solid #E2E8F0; text-align: center;">
+            <p style="color: #718096; font-size: 14px;">This is an automated message. Please do not reply.<br>
+            For support: <a href="mailto:support@tachysvps.com" style="color: #7A49B7; text-decoration: none;">support@tachysvps.com</a></p>
+            
+            <div style="margin-top: 20px;">
+              <a href="https://twitter.com/tachysvps" style="color: #718096; text-decoration: none; margin: 0 10px; display: inline-flex; align-items: center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/>
                 </svg>
-                X
-              </a> | 
-              <a href="https://linkedin.com/company/tachysvps" style="color: #7A49B7; text-decoration: none; margin: 0 5px; display: inline-flex; align-items: center;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+              </a>
+              <a href="https://linkedin.com/company/tachysvps" style="color: #718096; text-decoration: none; margin: 0 10px; display: inline-flex; align-items: center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
                   <rect x="2" y="9" width="4" height="12"/>
                   <circle cx="4" cy="4" r="2"/>
                 </svg>
-                LinkedIn
               </a>
-            </p>
+            </div>
           </div>
         </div>
       `
     })
+  }
+};
+
+// Update the from email logic to handle all transporter types
+const getFromEmail = (transporterType: keyof typeof transporters) => {
+  switch (transporterType) {
+    case 'founder':
+      return process.env.FOUNDER_EMAIL_USER;
+    case 'sales':
+      return process.env.SALES_EMAIL_USER;
+    case 'notifications':
+      return process.env.NOTIFICATIONS_EMAIL_USER;
+    default:
+      return process.env.EMAIL_USER;
   }
 };
 
@@ -367,13 +405,23 @@ export async function POST(request: NextRequest) {
     const templateConfig = templates[template as TemplateType];
     const emailContent = templateConfig.generator(data);
     
-    // Use the correct from address based on the transporter
-    const fromEmail = templateConfig.transporter === 'founder' 
-      ? process.env.FOUNDER_EMAIL_USER 
-      : process.env.EMAIL_USER;
+    // Use the correct from email based on the transporter type
+    const fromEmail = getFromEmail(templateConfig.transporter);
+    const fromName = (() => {
+      switch (templateConfig.transporter) {
+        case 'founder':
+          return 'TachysVPS Founder';
+        case 'sales':
+          return 'TachysVPS Sales';
+        case 'notifications':
+          return 'TachysVPS Notifications';
+        default:
+          return 'TachysVPS Support';
+      }
+    })();
 
     await transporters[templateConfig.transporter].sendMail({
-      from: `"TachysVPS ${templateConfig.transporter === 'founder' ? 'Founder' : 'Support'}" <${fromEmail}>`,
+      from: `"${fromName}" <${fromEmail}>`,
       ...emailContent
     });
 

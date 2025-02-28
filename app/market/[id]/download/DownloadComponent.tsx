@@ -163,7 +163,7 @@ export default function DownloadComponent({ algo, id }: DownloadComponentProps) 
           downloads: increment(1)
         });
 
-        // Send congratulatory email
+        // Send congratulatory email with review link
         await fetch('/api/contact', {
           method: 'POST',
           headers: {
@@ -174,13 +174,14 @@ export default function DownloadComponent({ algo, id }: DownloadComponentProps) 
             data: {
               name: userData.name || user.email?.split('@')[0] || 'there',
               email: user.email,
-              algoName: algo.name
+              algoName: algo.name,
+              productUrl: `${window.location.origin}/market/${id}#review`
             },
           }),
         });
-      }
 
-      toast.success('Download started successfully!');
+        toast.success('Download started! Check your email for more details.');
+      }
     } catch (error) {
       console.error('Download error:', error);
       toast.error('Failed to download file. Please try again later.');
