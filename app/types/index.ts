@@ -238,7 +238,10 @@ export type Algo = {
   sellerId: string;
   sellerName: string;
   sellerLocation: string;
-  app?: string;
+  app: {
+    url: string;
+    path: string;
+  };
   shortDescription?: string;
   type: AlgoType;
   paid?: boolean;
@@ -246,8 +249,10 @@ export type Algo = {
   name: string;
   description: string;
   descriptionHTML: string;
-  image: string;
-  image_path: string;
+  image: {
+    url: string;
+    path: string;
+  };
   identity: Identity;
   cost: Cost;
   buy_price: number;
@@ -271,7 +276,6 @@ export type Algo = {
     path: string;
   }>;
   status: Status;  // default NotComplete
-  app_path: string;
 };
 
 export type User = {
@@ -438,7 +442,10 @@ export interface UnverifiedAlgo {
   shortDescription: string;
   sellerId: string;
   sellerName: string;
-  image: string;
+  image: {
+    url: string;
+    path: string;
+  };
   buy_price: number;
   rating: number;
   type: string;
@@ -446,7 +453,10 @@ export interface UnverifiedAlgo {
   uploaded: string;
   updated: string;
   downloads: number;
-  screenshots: Array<string | { link: string }>;
+  screenshots: Array<{
+    url: string;
+    path: string;
+  }>;
   cost: string;
   platform: string;
   md_description: string;

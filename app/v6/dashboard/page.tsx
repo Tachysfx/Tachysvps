@@ -431,7 +431,7 @@ export default function Dashboard() {
         {[
           { id: 1, label: "Buy New VPS", icon: faServer, link: "/plans/lite" },
           { id: 2, label: "Buy Trading Bots", icon: faRobot, link: "/market" },
-          { id: 3, label: "Subscribe to Signals", icon: faSignal, link: "/signals" },
+          { id: 3, label: "Subscribe to Signals", icon: faSignal, link: "https://www.zulutrade.com/register/?ref=2760948&utm_medium=affiliate&utm_source=2760948&utm_campaign=affiliate" },
           { id: 4, label: "Support Ticket", icon: faHeadset, link: "/v6/support" },
         ].map((action) => (
           <div key={action.id} className="col-6 col-md-3">

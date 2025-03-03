@@ -142,9 +142,9 @@ export default function DownloadComponent({ algo, id }: DownloadComponentProps) 
         }
       }
 
-      // Start download directly using algo.app URL
+      // Start download directly using algo.app.url
       const link = document.createElement('a');
-      link.href = algo.app;
+      link.href = algo.app.url;
       link.download = algo.name;
       document.body.appendChild(link);
       link.click();
@@ -263,7 +263,7 @@ export default function DownloadComponent({ algo, id }: DownloadComponentProps) 
           </Link>
 
           {/* Premium Signals Card */}
-          <Link href="/signals" className="group">
+          <Link href="https://www.zulutrade.com/register/?ref=2760948&utm_medium=affiliate&utm_source=2760948&utm_campaign=affiliate" className="group">
             <div className="h-full bg-white rounded-lg shadow-md p-3 hover:shadow-lg transition-all duration-200">
               <div className="flex items-center gap-2 mb-2">
                 <Globe2 className="w-5 h-5 text-purple-600" />
@@ -302,6 +302,21 @@ export default function DownloadComponent({ algo, id }: DownloadComponentProps) 
                 Learn more <ArrowRight className="w-4 h-4 ml-1" />
               </span>
             </div>
+          </Link>
+        </div>
+
+        <div className="mt-8">
+          <Link 
+            href="https://www.zulutrade.com?ref=2760948&utm_source=2760948&utm_medium=affiliate&utm_campaign=affiliate_banner&utm_term=728x90&utm_content=features"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block"
+          >
+            <img 
+              src="https://www.zulutrade.com/Static/Banners/Affiliate/En/Features/Zulutrade-affiliateFeatures-728x90.en.gif"
+              alt="ZuluTrade Features"
+              className="w-full"
+            />
           </Link>
         </div>
       </div>

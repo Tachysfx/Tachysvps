@@ -19,8 +19,14 @@ interface Algo {
   ratingCount: number;
   buy_price: string;
   cost: string;
-  downloadUrl: string;
-  image: string;
+  app: {
+    url: string;
+    path: string;
+  };
+  image: {
+    url: string;
+    path: string;
+  };
   lastUpdated: string;
   isLicensed?: boolean;
 }
@@ -55,7 +61,7 @@ const AlgoCard = ({ algo }: { algo: Algo }) => (
             <span className="badge-new">{algo.platform}</span>
           </div>
           <Image
-            src={algo.image}
+            src={algo.image.url}
             width={100}
             height={160}
             alt={algo.name}
@@ -76,7 +82,7 @@ const AlgoCard = ({ algo }: { algo: Algo }) => (
             <div className="d-flex flex-column align-items-center">
               <div className="d-flex align-items-center">
                 <Image
-                  src={algo.image}
+                  src={algo.image.url}
                   width={30}
                   height={50}
                   alt={algo.name}
@@ -170,9 +176,18 @@ export default function DownloadsPage() {
         const downloadedAlgosPromises = downloadedAlgoIds.map(async (id: string) => {
           const algoDoc = await getDoc(doc(db, "algos", id));
           if (algoDoc.exists()) {
+            const algoData = algoDoc.data();
             return {
               id: algoDoc.id,
-              ...algoDoc.data(),
+              ...algoData,
+              image: {
+                url: algoData.image.url,
+                path: algoData.image.path
+              },
+              app: {
+                url: algoData.app.url,
+                path: algoData.app.path
+              },
               isLicensed: true
             } as Algo;
           }
@@ -183,7 +198,7 @@ export default function DownloadsPage() {
         downloadedAlgos = resolvedAlgos.filter((algo): algo is Algo => algo !== null);
       }
 
-      // Fetch featured algos from featurealgos collection
+      // Fetch featured algos with the new structure
       const featuredDoc = await getDoc(doc(db, "featurealgos", "featured"));
       let featuredAlgos: Algo[] = [];
       
@@ -195,9 +210,18 @@ export default function DownloadsPage() {
           const featuredAlgosPromises = featuredIds.map(async (id: string) => {
             const algoDoc = await getDoc(doc(db, "algos", id));
             if (algoDoc.exists()) {
+              const algoData = algoDoc.data();
               return {
                 id: algoDoc.id,
-                ...algoDoc.data()
+                ...algoData,
+                image: {
+                  url: algoData.image.url,
+                  path: algoData.image.path
+                },
+                app: {
+                  url: algoData.app.url,
+                  path: algoData.app.path
+                }
               } as Algo;
             }
             return null;

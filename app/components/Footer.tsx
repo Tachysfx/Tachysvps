@@ -24,7 +24,7 @@ export default function Footer() {
                         <h5 className='fw-bold mb-3'>Our Services</h5>
                         <ul className="nav flex-column">
                             <li className="nav-item mb-2"><Link href="/" className="nav-link text-light p-0 opacity-75 hover:opacity-100">Home</Link></li>
-                            <li className="nav-item mb-2"><Link href="/#pricing" className="nav-link text-light p-0 opacity-75 hover:opacity-100">Plans & Pricing</Link></li>
+                            <li className="nav-item mb-2"><Link href="/plans/lite" className="nav-link text-light p-0 opacity-75 hover:opacity-100">Plans & Pricing</Link></li>
                             <li className="nav-item mb-2"><Link href="/about" className="nav-link text-light p-0 opacity-75 hover:opacity-100">Locations</Link></li>
                             <li className="nav-item mb-2"><Link href="/v6/account" className="nav-link text-light p-0 opacity-75 hover:opacity-100">My Account</Link></li>
                         </ul>
@@ -34,8 +34,8 @@ export default function Footer() {
                         <h5 className='fw-bold mb-3'>Client Menu</h5>
                         <ul className="nav flex-column">
                             <li className="nav-item mb-2"><Link href="/market" className="nav-link text-light p-0 opacity-75 hover:opacity-100">Algo Market</Link></li>
-                            <li className="nav-item mb-2"><Link href="/affiliate" className="nav-link text-light p-0 opacity-75 hover:opacity-100">Partnerships</Link></li>
-                            <li className="nav-item mb-2"><Link href="/seller" className="nav-link text-light p-0 opacity-75 hover:opacity-100">Seller</Link></li>
+                            <li className="nav-item mb-2"><Link href="/partnership" className="nav-link text-light p-0 opacity-75 hover:opacity-100">Partnerships</Link></li>
+                            <li className="nav-item mb-2"><Link href="/v6/seller" className="nav-link text-light p-0 opacity-75 hover:opacity-100">Seller</Link></li>
                             <li className="nav-item mb-2"><Link href="/contact-us" className="nav-link text-light p-0 opacity-75 hover:opacity-100">Contact Us</Link></li>
                         </ul>
                     </div>

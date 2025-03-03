@@ -273,10 +273,10 @@ export default function AlgoDetails({ enrichedAlgo, enrichedAlgos, id }: AlgoDet
             <div className="content-left px-2">
               <div className="text-center mt-3">
                 <Image
-                  src={enrichedAlgo.image}
+                  src={enrichedAlgo.image.url}
                   width={170}
                   height={170}
-                  alt="blur"
+                  alt={enrichedAlgo.name}
                   className="mx-auto"
                 />
                 <p className="fw-bolder my-0">${enrichedAlgo.buy_price}</p>
@@ -304,7 +304,23 @@ export default function AlgoDetails({ enrichedAlgo, enrichedAlgos, id }: AlgoDet
                 <p className="mb-1">Updated: {enrichedAlgo.identity === "Internal" ? formatDate(enrichedAlgo.updated) : enrichedAlgo.updated}</p>
                 <p className="mb-1">Version: {enrichedAlgo.version}</p>
                 <p className="mb-1">Downloads: {enrichedAlgo.downloads}</p>
-                <Link href={author} type='button' className="btn btn-sm btn-outline-purple mb-5">other algos from this seller</Link>
+                <Link href={author} type='button' className="btn btn-sm btn-outline-purple mb-2">other algos from this seller</Link>
+              </div>
+              <hr />
+              <div className="text-center">
+                <Link 
+                  href="https://f5y95.app.goo.gl/?link=https%3a%2f%2fwww.zulutrade.com%3a443%2f%3fref%3d2760948&apn=zulu.trade.app&ibi=com.zulutrade.ZuluTrade&isi=336913058&ofl=www.zulutrade.com?ref=2760948&bt=s&utm_medium=affiliate"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Image
+                    src="https://www.zulutrade.com/Static/Banners/Affiliate/En/Mobile-app/Zulutrade-affiliateMobileApp-static-320x100.en.png"
+                    alt="ZuluTrade"
+                    width={320}
+                    height={100}
+                    className="rounded shadow-sm"
+                  />
+                </Link>
               </div>
               <hr />
               <CardSideBar />
@@ -318,21 +334,17 @@ export default function AlgoDetails({ enrichedAlgo, enrichedAlgos, id }: AlgoDet
               <div className="text-center mb-4">
                 <div id="carouselExampleAutoplaying" className="carousel carousel-fade slide mb-4" data-bs-ride="carousel">
                   <div className="carousel-inner">
-                    {enrichedAlgo.screenshots?.map((screenshot: string | { link: string }, index: number) => {
-                      const src = typeof screenshot === 'string' ? screenshot : screenshot.link;
-                      if (!src) return null;
-                      return (
-                          <div key={index} className={`carousel-item ${index === 0 ? "active" : ""}`}>
-                              <Image
-                                  src={src}
-                                  alt={`Screenshot ${index + 1}`}
-                                  width={800}
-                                  height={600}
-                                  className="d-block w-100"
-                              />
-                          </div>
-                      );
-                    })}
+                    {enrichedAlgo.screenshots?.map((screenshot, index) => (
+                      <div key={index} className={`carousel-item ${index === 0 ? "active" : ""}`}>
+                        <Image
+                          src={screenshot.url}
+                          alt={`Screenshot ${index + 1}`}
+                          width={800}
+                          height={600}
+                          className="d-block w-100"
+                        />
+                      </div>
+                    ))}
                   </div>
                   <button className="carousel-control-prev" type="button" data-bs-target="#carouselExampleAutoplaying" data-bs-slide="prev">
                     <span className="carousel-control-prev-icon" aria-hidden="true"></span>
@@ -347,6 +359,21 @@ export default function AlgoDetails({ enrichedAlgo, enrichedAlgos, id }: AlgoDet
               </div>
               <Deep enrichedAlgo={enrichedAlgo} params={id} />
               <div className="mb-5">
+                <div>
+                  <Link 
+                    href="https://f5y95.app.goo.gl/?link=https%3a%2f%2fwww.zulutrade.com%3a443%2f%3fref%3d2760948&apn=zulu.trade.app&ibi=com.zulutrade.ZuluTrade&isi=336913058&ofl=www.zulutrade.com?ref=2760948&bt=s&utm_medium=affiliate"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Image
+                      src="https://www.zulutrade.com/Static/Banners/Affiliate/En/Mobile-app/Zulutrade-affiliateMobileApp-static-320x100.en.png"
+                      alt="ZuluTrade Mobile App"
+                      width={320}
+                      height={100}
+                      className="rounded shadow-sm"
+                    />
+                  </Link>
+                </div>
                 <More enrichedAlgos={enrichedAlgos} />
               </div>
             </div>

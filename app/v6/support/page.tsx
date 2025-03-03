@@ -143,10 +143,10 @@ const SupportPage = () => {
         {/* Contact Information */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
           {/* Desktop View */}
-          <div className="hidden md:block">
-            <div className="flex items-center mb-6">
-              <FontAwesomeIcon icon={faComments} className="text-purple-600 text-2xl mr-2" />
-              <h4 className="text-xl font-semibold text-gray-900">Contact Us</h4>
+          <div className="">
+            <div className="d-flex justify-content-center mb-6 p-3 pb-0 text-purple-800 bg-purple-100 border-2 border-purple-800 rounded-2xl">
+              <FontAwesomeIcon icon={faComments} className="text-2xl mr-2" />
+              <h4 className="text-xl font-semibold">Contact Us</h4>
             </div>
 
             <div className="space-y-6">
@@ -154,7 +154,7 @@ const SupportPage = () => {
                 <FontAwesomeIcon icon={faClock} className="text-purple-500 text-2xl mt-1 mr-3" />
                 <div>
                   <h5 className="font-medium text-gray-900 mb-1">24/7 Support</h5>
-                  <p className="text-gray-600 mb-1">Our team is here to help you anytime</p>
+                  <p className="text-gray-600 mb-1 mx-0">Our team is here to help you anytime</p>
                 </div>
               </div>
 
@@ -178,61 +178,11 @@ const SupportPage = () => {
 
               <div className="bg-purple-50 p-4 rounded-xl mt-6">
                 <h5 className="font-medium text-purple-600 mb-2">Average Response Times</h5>
-                <ul className="space-y-2 text-sm text-gray-600">
+                <ul className="space-y-2 text-sm text-gray-600 pl-0">
                   <li>• Email Support: Within 5 mins</li>
                   <li>• Phone Support: Immediate</li>
                   <li>• Ticket System: Immediate</li>
                 </ul>
-              </div>
-            </div>
-          </div>
-
-          {/* Mobile View */}
-          <div className="md:hidden">
-            <div className="text-center mb-6">
-              <FontAwesomeIcon icon={faComments} className="text-purple-600 text-3xl mb-3" />
-              <h4 className="text-xl font-semibold text-gray-900">Contact Us</h4>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="bg-purple-50 p-4 rounded-xl text-center">
-                <FontAwesomeIcon icon={faClock} className="text-purple-500 text-2xl mb-2" />
-                <h5 className="font-medium text-gray-900 text-sm text-center">24/7 Support</h5>
-              </div>
-
-              <div className="bg-purple-50 p-4 rounded-xl text-center">
-                <FontAwesomeIcon icon={faEnvelope} className="text-purple-500 text-2xl mb-2" />
-                <Link href="mailto:support@tachysvps.com" className="text-purple-600 hover:text-purple-700 text-sm block">
-                  support@tachysvps.com
-                </Link>
-              </div>
-
-              <div className="bg-purple-50 p-4 rounded-xl text-center">
-                <FontAwesomeIcon icon={faPhone} className="text-purple-500 text-2xl mb-2" />
-                <p className="text-gray-900 text-sm text-center">+44 2890 ***</p>
-              </div>
-
-              <div className="bg-purple-50 p-4 rounded-xl text-center">
-                <FontAwesomeIcon icon={faHeart} className="text-red-500 text-2xl mb-2" />
-                <p className="text-gray-900 text-sm text-center">Thank You</p>
-              </div>
-            </div>
-
-            <div className="bg-purple-100 p-4 rounded-xl">
-              <h5 className="font-medium text-purple-600 mb-3 text-center">Response Times</h5>
-              <div className="grid grid-cols-3 gap-2 text-xs text-center text-gray-700">
-                <div>
-                  <div className="font-medium mb-1">Email</div>
-                  <div>5 mins</div>
-                </div>
-                <div>
-                  <div className="font-medium mb-1">Phone</div>
-                  <div>Immediate</div>
-                </div>
-                <div>
-                  <div className="font-medium mb-1">Ticket</div>
-                  <div>Immediate</div>
-                </div>
               </div>
             </div>
           </div>

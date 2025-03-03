@@ -141,13 +141,14 @@ export default function ContactForm() {
           <option value="">Select a topic</option>
           <option value="Technical Support">Technical Support</option>
           <option value="Sales Inquiry">Sales Inquiry</option>
-          <option value="Billing Question">VPS Service</option>
-          <option value="Billing Question">Forex Bots</option>
-          <option value="Billing Question">Billing & Payments</option>
-          <option value="Billing Question">Withdrawal</option>
-          <option value="Billing Question">Report a bug</option>
-          <option value="Billing Question">Report a Fraud</option>
-          <option value="Other">Other</option>
+          <option value="VPS Service">VPS Service</option>
+          <option value="Forex Bots">Forex Bots</option>
+          <option value="Billing & Payments">Billing & Payments</option>
+          <option value="Withdrawal">Withdrawal</option>
+          <option value="Report a bug">Report a bug</option>
+          <option value="Report a Fraud">Report a Fraud</option>
+          <option value="Report an Abuse">Report an Abuse</option>
+          <option value="Others">Others</option>
         </select>
       </div>
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import AdsCard from '../components/AdsCard';
+import Link from 'next/link';
 
 const promotion1 = '/promotion1.png';
 const promotion2 = '/promotion2.png';
@@ -49,6 +50,26 @@ const CardSideBar = () => {
             <AdsCard img={card.img} txt={card.txt} />
           </motion.div>
         ))}
+      </div>
+      <div>
+        <Link 
+          href="https://www.zulutrade.com?ref=2760948&utm_source=2760948&utm_medium=affiliate&utm_campaign=affiliate_banner&utm_term=225x60&utm_content=logostatic"
+        >
+          <img 
+            src="https://www.zulutrade.com/Static/Banners/Affiliate/En/Static-Generic/zulutrade-logo-white-225x60.en.png"
+            alt="ZuluTrade"
+          />
+        </Link>
+      </div>
+      <div>
+        <Link
+          href="https://www.zulutrade.com?ref=2760948&utm_source=2760948&utm_medium=affiliate&utm_campaign=affiliate_banner&utm_term=300x250&utm_content=features"
+        >
+          <img
+            src="https://www.zulutrade.com/Static/Banners/Affiliate/En/Features/Zulutrade-affiliateFeatures-300x250.en.gif"
+            alt="ZuluTrade Features"
+          />
+        </Link>
       </div>
     </div>
   );

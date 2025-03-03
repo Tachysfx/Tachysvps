@@ -145,10 +145,10 @@ export default async function Page({ params }: {params: Promise< {id: string}>})
                         <div className="content-left px-2">
                             <div className="text-center mt-3">
                                 <Image
-                                    src={enrichedAlgo.image}
+                                    src={enrichedAlgo.image.url}
                                     width={170}
                                     height={170}
-                                    alt="blur"
+                                    alt={enrichedAlgo.name}
                                     className="mx-auto"
                                 />
                                 <p className="fw-bolder my-0">${enrichedAlgo.buy_price}</p>
@@ -191,21 +191,17 @@ export default async function Page({ params }: {params: Promise< {id: string}>})
                             <div className="text-center mb-4">
                                 <div id="carouselExampleAutoplaying" className="carousel carousel-fade slide mb-4" data-bs-ride="carousel">
                                     <div className="carousel-inner">
-                                        {enrichedAlgo.screenshots?.map((screenshot: string | { link: string }, index: number) => {
-                                            const src = typeof screenshot === 'string' ? screenshot : screenshot.link;
-                                            if (!src) return null;
-                                            return (
-                                                <div key={index} className={`carousel-item ${index === 0 ? "active" : ""}`}>
-                                                    <Image
-                                                        src={src}
-                                                        alt={`Screenshot ${index + 1}`}
-                                                        width={800}
-                                                        height={600}
-                                                        className="d-block w-100"
-                                                    />
-                                                </div>
-                                            );
-                                        })}
+                                        {enrichedAlgo.screenshots?.map((screenshot, index) => (
+                                            <div key={index} className={`carousel-item ${index === 0 ? "active" : ""}`}>
+                                                <Image
+                                                    src={screenshot.url}
+                                                    alt={`Screenshot ${index + 1}`}
+                                                    width={800}
+                                                    height={600}
+                                                    className="d-block w-100"
+                                                />
+                                            </div>
+                                        ))}
                                     </div>
                                     <button className="carousel-control-prev" type="button" data-bs-target="#carouselExampleAutoplaying" data-bs-slide="prev">
                                         <span className="carousel-control-prev-icon" aria-hidden="true"></span>

@@ -760,9 +760,9 @@ export default function SignInPage() {
             <div>
               <h1 className="text-4xl lg:text-6xl font-bold tracking-tight">
                 <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                  Tachys
+                  Tachys 
                 </span>
-                <span className="text-gray-800">VPS</span>
+                <span className="text-gray-800"> VPS</span>
               </h1>
               <p className="mt-4 text-lg text-gray-600 leading-relaxed">
                 Enterprise-grade Virtual Private Servers for every professional need. 

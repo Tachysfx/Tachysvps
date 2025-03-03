@@ -23,7 +23,7 @@ const AlgoCard = ({ algo }: { algo: Algo }) => (
               <span className="badge-new">{algo.platform}</span>
             </div>
             <Image
-              src={algo.image || '/placeholder.png'}
+              src={algo.image.url || '/placeholder.png'}
               width={100}
               height={160}
               alt={algo.name}
@@ -53,7 +53,7 @@ const AlgoCard = ({ algo }: { algo: Algo }) => (
               <div className="d-flex flex-column align-items-center">
                 <div className="d-flex align-items-center">
                   <Image
-                    src={algo.image || '/placeholder.png'}
+                    src={algo.image.url || '/placeholder.png'}
                     width={30}
                     height={50}
                     alt={algo.name}
@@ -307,12 +307,41 @@ export default function MarketClient({ enrichedAlgos }: MarketClientProps) {
         </nav>
       )}
 
-
       {/* Copy Trading and Signal Trading Section */}
       <div className="row mb-5">
         <h3 className="mb-2 text-purple">Copy Trading & Signal Trading</h3>
         <hr />
-        
+        <div className="mt-8">
+          <Link 
+            href="https://www.zulutrade.com?ref=2760948&utm_source=2760948&utm_medium=affiliate&utm_campaign=affiliate_banner&utm_term=728x90&utm_content=features"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block"
+          >
+            <img 
+              src="https://www.zulutrade.com/Static/Banners/Affiliate/En/Features/Zulutrade-affiliateFeatures-728x90.en.gif"
+              alt="ZuluTrade Features"
+              className="w-full"
+            />
+          </Link>
+        </div>
+        <div className="d-flex justify-content-center align-items-center my-4">
+          <Link 
+            href="https://www.zulutrade.com/copy-trading?ref=2760948&utm_source=2760948&utm_medium=affiliate&utm_campaign=affiliate_banner&utm_term=728x90&utm_content=euregulated"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="position-relative d-block"
+          >
+            <Image
+              src="https://www.zulutrade.com/Static/Banners/Affiliate/En/EU-regulated/Zulutrade-affiliateEuRegulated-728x90.en.gif"
+              alt="ZuluTrade Copy Trading"
+              width={728}
+              height={90}
+              priority
+              className="rounded shadow-sm"
+            />
+          </Link>
+        </div>
       </div>
     </>
   );
