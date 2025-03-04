@@ -336,7 +336,7 @@ export default function SellerDashboard() {
                               <span className="badge-new">{algo.platform}</span>
                             </div>
                             <Image
-                              src={algo.image}
+                              src={algo.image?.url || ''}
                               width={100}
                               height={160}
                               alt={algo.name}
@@ -357,7 +357,7 @@ export default function SellerDashboard() {
                               <div className="d-flex flex-column align-items-center">
                                 <div className="d-flex align-items-center">
                                   <Image
-                                    src={algo.image}
+                                    src={algo.image?.url || ''}
                                     width={30}
                                     height={50}
                                     alt={algo.name}
@@ -413,7 +413,7 @@ export default function SellerDashboard() {
                               <span className="badge-new">{algo.platform}</span>
                             </div>
                             <Image
-                              src={algo.image}
+                              src={algo.image?.url || ''}
                               width={100}
                               height={160}
                               alt={algo.name}
@@ -434,7 +434,7 @@ export default function SellerDashboard() {
                               <div className="d-flex flex-column align-items-center">
                                 <div className="d-flex align-items-center">
                                   <Image
-                                    src={algo.image}
+                                    src={algo.image?.url || ''}
                                     width={30}
                                     height={50}
                                     alt={algo.name}

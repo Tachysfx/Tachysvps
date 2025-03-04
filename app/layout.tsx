@@ -11,6 +11,7 @@ import Footer from "./components/Footer";
 import AuthHandler from "./components/AuthHandler";
 import FontAwesomeLoader from "./lib/FontAwesomeLoader";
 import PremiumExpiryChecker from "./components/PremiumExpiryChecker";
+import Script from 'next/script'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://tachysvps.com'),
@@ -120,6 +121,11 @@ export default function RootLayout({
         <meta httpEquiv="Content-Language" content="en" />
       </head>
       <body className="antialiased bg-gray-100">
+        <Script
+          id="hs-script-loader"
+          src="//js-na2.hs-scripts.com/242112440.js"
+          strategy="afterInteractive"
+        />
         <FontAwesomeLoader />
         <ToastContainer
           position="top-right"

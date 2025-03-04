@@ -142,14 +142,18 @@ export function EditAlgoForm({ algo, onSuccess, onCancel, unverifiedAlgos }: Edi
 
       if (files.image) {
         const imageFile = await uploadFile(files.image, 'image');
-        newAlgoData.image = imageFile.url;
-        newAlgoData.image_path = imageFile.path;
+        newAlgoData.image = {
+          url: imageFile.url,
+          path: imageFile.path
+        };
       }
 
       if (files.app) {
         const appFile = await uploadFile(files.app, 'zip');
-        newAlgoData.app = appFile.url;
-        newAlgoData.app_path = appFile.path;
+        newAlgoData.app = {
+          url: appFile.url,
+          path: appFile.path
+        };
       }
 
       if (files.screenshots.length > 0) {

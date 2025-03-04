@@ -437,29 +437,46 @@ export interface PaymentProps {
 
 export interface UnverifiedAlgo {
   id: string;
-  name: string;
-  description: string;
-  shortDescription: string;
   sellerId: string;
   sellerName: string;
+  sellerLocation: string;
+  app: {
+    url: string;
+    path: string;
+  };
+  shortDescription: string;
+  type: AlgoType;
+  platform: string;
+  name: string;
+  description: string;
+  descriptionHTML?: string;
   image: {
     url: string;
     path: string;
   };
+  identity: Identity;
+  cost: Cost;
   buy_price: number;
-  rating: number;
-  type: string;
+  demo_price: number;
+  downloads: number;
+  downloadLink?: string;
+  remoteDownloadLink?: string;
   version: string;
   uploaded: string;
   updated: string;
-  downloads: number;
+  md_description: string;
+  md_path?: string;
+  ratings: Array<string>;
+  rating: number;
+  ratingCount: number;
+  commentCount: number;
+  comments: Array<string>;
+  reviews: Array<string>;
   screenshots: Array<{
     url: string;
     path: string;
   }>;
-  cost: string;
-  platform: string;
-  md_description: string;
+  status: Status;
 }
 
 export interface MembershipDuration {
@@ -528,7 +545,49 @@ export interface StorageResult {
     contentType: string;
     size: number;
     [key: string]: any;
+  }
+}
+
+export interface FileUploadResult {
+  url: string;
+  path: string;
+  folder: string;
+  access: 'public' | 'private';
+  metadata?: {
+    contentType: string;
+    size: number;
+    name: string;
+    [key: string]: any;
+  }
+}
+
+export interface AlgoFormData {
+  name: string;
+  shortDescription: string;
+  description: string;
+  type: AlgoType;
+  platform: string;
+  buy_price: number;
+  demo_price: number;
+  version: string;
+  identity: Identity;
+  cost: Cost;
+  status: Status;
+}
+
+export interface StorageOptions {
+  access: 'public' | 'private';
+  folder: string;
+  token?: string;
+  metadata?: Record<string, string>;
+  dbUpdate?: {
+    collection: string;
+    docId: string;
+    field: string;
   };
+  generateThumbnail?: boolean;
+  maxDuration?: number;
+  maxSize?: number;
 }
 
 export interface ProfileUpdateOptions extends StorageOptions {
