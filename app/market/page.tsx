@@ -140,7 +140,7 @@ export default async function Market(){
               <div className="py-3">
                 {/* Header */}
                 <div className="text-center mb-3">
-                  <h1 className="text-3xl md:text-4xl font-bold mb-2 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                  <h1 className="text-3xl md:text-4xl font-bold mb-2 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-purple-800">
                     Algorithm Marketplace
                   </h1>
                   <h2 className="text-xl md:text-2xl text-gray-700 font-medium">
@@ -160,7 +160,7 @@ export default async function Market(){
                           alt="Algorithm marketplace"
                           className="rounded-xl"
                         />
-                        <div className="absolute -bottom-2 -right-2 bg-purple-600 text-white text-xs px-2 py-1 rounded-full">
+                        <div className="absolute -bottom-2 -right-2 bg-purple-800 text-white text-xs px-2 py-1 rounded-full">
                           Verified
                         </div>
                       </div>
@@ -169,11 +169,11 @@ export default async function Market(){
                     {/* Middle Column - Main Content */}
                     <div className="col-12 col-lg-7">
                       <div className="space-y-4">
-                        <p className="text-gray-600 leading-relaxed">
+                        <p className="text-gray-600 leading-relaxed bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg border border-gray-100 shadow-sm">
                           Welcome to the premier destination for professional trading algorithms. Our expertly curated marketplace brings together the most sophisticated automated trading bots, cutting-edge technical indicators, and proven copy trading systems. Discover why thousands of traders trust our marketplace to enhance their trading journey:
                         </p>
                         
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
+                        <div className="flex flex-wrap justify-center gap-4 mb-3">
                           <div className="flex items-center gap-2">
                             <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
                               <Code className="w-4 h-4 text-purple-600" />
@@ -213,7 +213,7 @@ export default async function Market(){
                         </p>
                         <Link 
                           href="./v6/seller" 
-                          className="inline-flex items-center justify-center gap-2 w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200"
+                          className="inline-flex items-center justify-center gap-2 w-full px-4 py-2 bg-purple-800 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200"
                         >
                           <ShoppingBag className="w-4 h-4" />
                           Start Selling
@@ -224,22 +224,22 @@ export default async function Market(){
 
                   {/* Stats Bar */}
                   <div className="mt-8 pt-6 border-t border-gray-100">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-purple-600">1,000+</div>
-                        <div className="text-sm text-gray-600">Active Algorithms</div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                      <div className="text-center p-4 rounded-lg bg-purple-800 shadow-sm hover:shadow-md transition-shadow duration-200">
+                        <div className="text-3xl font-bold text-white mb-2">1,000+</div>
+                        <div className="text-sm font-medium text-white">Active Algorithms</div>
                       </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-purple-600">1.2K+</div>
-                        <div className="text-sm text-gray-600">Monthly Users</div>
+                      <div className="text-center p-4 rounded-lg bg-purple-800 shadow-sm hover:shadow-md transition-shadow duration-200">
+                        <div className="text-3xl font-bold text-white mb-2">1.2K+</div>
+                        <div className="text-sm font-medium text-white">Monthly Users</div>
                       </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-purple-600">100%</div>
-                        <div className="text-sm text-gray-600">Satisfaction Rate</div>
+                      <div className="text-center p-4 rounded-lg bg-purple-800 shadow-sm hover:shadow-md transition-shadow duration-200">
+                        <div className="text-3xl font-bold text-white mb-2">100%</div>
+                        <div className="text-sm font-medium text-white">Satisfaction Rate</div>
                       </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-purple-600">24/7</div>
-                        <div className="text-sm text-gray-600">Support Available</div>
+                      <div className="text-center p-4 rounded-lg bg-purple-800 shadow-sm hover:shadow-md transition-shadow duration-200">
+                        <div className="text-3xl font-bold text-white mb-2">24/7</div>
+                        <div className="text-sm font-medium text-white">Support Available</div>
                       </div>
                     </div>
                   </div>

@@ -36,7 +36,8 @@ import { AddAlgoForm } from './components/AddAlgoForm';
 import { ManageListings } from './components/ManageListings';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Seller, Algo, SalesData } from '../../types';
+import { Seller, Algo, SalesData, UnverifiedAlgo } from '../../types';
+import { Status } from '../../types';
 
 // Register ChartJS components
 ChartJS.register(
@@ -57,7 +58,7 @@ export default function SellerDashboard() {
   const [sellerData, setSellerData] = useState<Seller | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoading, setIsLoading] = useState(true);
-  const [pendingAlgos, setPendingAlgos] = useState<Algo[]>([]);
+  const [pendingAlgos, setPendingAlgos] = useState<UnverifiedAlgo[]>([]);
   const [approvedAlgos, setApprovedAlgos] = useState<Algo[]>([]);
   const [salesData, setSalesData] = useState<SalesData>({
     earnings: 0,
@@ -100,48 +101,51 @@ export default function SellerDashboard() {
 
   const loadAlgos = async (sellerId: string) => {
     try {
-      // First, check for completed algorithms in unverifiedalgos
+      // Load pending algorithms
       const q = query(collection(db, "unverifiedalgos"), where("sellerId", "==", sellerId));
       const pendingDocs = await getDocs(q);
       
-      // Handle migration of completed algorithms
+      const pendingAlgosArray: UnverifiedAlgo[] = [];
+      
+      // Handle migration and build pending array
       const migratePromises = pendingDocs.docs.map(async (docSnapshot) => {
         const algoData = docSnapshot.data();
-        if (algoData.status === "Complete") {
+        if (algoData.status === Status.Complete) {
           // Transform data for algos collection
           const { shortDescription, description, ...rest } = algoData;
           const algoForMigration = {
             ...rest,
-            description: shortDescription,   // shortDescription becomes description
-            md_description: description,     // description becomes md_description
+            description: shortDescription,   
+            md_description: description,     
           };
 
           // Add to algos collection with same ID
           await setDoc(doc(db, "algos", docSnapshot.id), algoForMigration);
-
-          // Delete from unverifiedalgos
           await deleteDoc(doc(db, "unverifiedalgos", docSnapshot.id));
-          return docSnapshot.id;
+        } else {
+          // Add to pending array if not complete
+          pendingAlgosArray.push({ 
+            id: docSnapshot.id, 
+            ...algoData 
+          } as UnverifiedAlgo);
         }
-        return null;
       });
 
       await Promise.all(migratePromises);
+      setPendingAlgos(pendingAlgosArray);
 
-      // Now get remaining pending algorithms
-      const newPendingQuery = query(collection(db, "unverifiedalgos"), where("sellerId", "==", sellerId));
-      const newPendingDocs = await getDocs(newPendingQuery);
-      const pendingData = newPendingDocs.docs.map(doc => ({ id: doc.id, ...doc.data() } as Algo));
-      setPendingAlgos(pendingData);
-
-      // Get approved algorithms
+      // Load approved algorithms
       const q2 = query(collection(db, "algos"), where("sellerId", "==", sellerId));
       const approvedDocs = await getDocs(q2);
-      const approvedData = approvedDocs.docs.map(doc => ({ id: doc.id, ...doc.data() } as Algo));
+      const approvedData = approvedDocs.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data() 
+      } as Algo));
       setApprovedAlgos(approvedData);
+
     } catch (error) {
-      toast.error("Error loading algorithms");
       console.error("Error loading algorithms:", error);
+      toast.error("Error loading algorithms");
     }
   };
 
@@ -312,78 +316,7 @@ export default function SellerDashboard() {
               ) : (
                 <div className="row roows">
                   {pendingAlgos.map(algo => (
-                    <div key={algo.id} className="col-6 col-md-2 mb-2 px-1">
-                      <div onClick={() => {
-                        Swal.fire({
-                          title: 'Algorithm Pending Approval',
-                          text: 'This algorithm is currently pending approval from our team. You can preview it while waiting.',
-                          icon: 'info',
-                          showCancelButton: true,
-                          confirmButtonColor: '#7A49B7',
-                          cancelButtonColor: '#d33',
-                          confirmButtonText: 'Preview Algorithm',
-                          cancelButtonText: 'Close'
-                        }).then((result) => {
-                          if (result.isConfirmed) {
-                            window.location.href = `/mark/${algo.id}`;
-                          }
-                        });
-                      }} className="card-link cursor-pointer">
-                        <div className="card hover-card">
-                          {/* Default View */}
-                          <div className="card-body product-card text-center p-0">
-                            <div className="product_badge">
-                              <span className="badge-new">{algo.platform}</span>
-                            </div>
-                            <Image
-                              src={algo.image?.url || ''}
-                              width={100}
-                              height={160}
-                              alt={algo.name}
-                              className="card-img-top"
-                            />
-                            <h5 className="card-title text-truncate">{algo.name}</h5>
-                            <RatingStars rating={algo.rating} />
-                            <div className="border mt-2">
-                              <p className="py-2 my-0 text-center">
-                                {algo.cost === "Free" ? "Free" : `$${algo.buy_price}`}
-                              </p>
-                            </div>
-                          </div>
-              
-                          {/* Hover View */}
-                          <div className="card-body p-2 details-card">
-                            <div className="d-flex border-bottom border-2">
-                              <div className="d-flex flex-column align-items-center">
-                                <div className="d-flex align-items-center">
-                                  <Image
-                                    src={algo.image?.url || ''}
-                                    width={30}
-                                    height={50}
-                                    alt={algo.name}
-                                    className="me-2"
-                                  />
-                                  <p className="mb-0">{algo.name}</p>
-                                </div>
-                                <div className="d-flex justify-content-evenly w-100">
-                                  <span className="text-success">
-                                    {algo.rating} ({algo.ratingCount})
-                                  </span>
-                                  <span className="text-muted">
-                                    {algo.type}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                            <p className="mb-0 pb-0">
-                              {algo.description.length > 250
-                                ? `${algo.shortDescription?.slice(0, 220)}...`
-                                : `${algo.shortDescription?.slice(0, 220)}...`}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <AlgoCard key={algo.id} algo={algo} isPending={true} />
                   ))}
                 </div>
               )}
@@ -404,86 +337,10 @@ export default function SellerDashboard() {
               ) : (
                 <div className="row roows">
                   {approvedAlgos.map(algo => (
-                    <div key={algo.id} className="col-6 col-md-2 mb-2 px-1">
-                      <Link href={`/market/${algo.id}`} className="card-link">
-                        <div className="card hover-card">
-                          {/* Default View */}
-                          <div className="card-body product-card text-center p-0">
-                            <div className="product_badge">
-                              <span className="badge-new">{algo.platform}</span>
-                            </div>
-                            <Image
-                              src={algo.image?.url || ''}
-                              width={100}
-                              height={160}
-                              alt={algo.name}
-                              className="card-img-top"
-                            />
-                            <h5 className="card-title text-truncate">{algo.name}</h5>
-                            <RatingStars rating={algo.rating} />
-                            <div className="border mt-2">
-                              <p className="py-2 my-0 text-center">
-                                {algo.cost === "Free" ? "Free" : `$${algo.buy_price}`}
-                              </p>
-                            </div>
-                          </div>
-              
-                          {/* Hover View */}
-                          <div className="card-body p-2 details-card">
-                            <div className="d-flex border-bottom border-2">
-                              <div className="d-flex flex-column align-items-center">
-                                <div className="d-flex align-items-center">
-                                  <Image
-                                    src={algo.image?.url || ''}
-                                    width={30}
-                                    height={50}
-                                    alt={algo.name}
-                                    className="me-2"
-                                  />
-                                  <p className="mb-0">{algo.name}</p>
-                                </div>
-                                <div className="d-flex justify-content-evenly w-100">
-                                  <span className="text-success">
-                                    {algo.rating} ({algo.ratingCount})
-                                  </span>
-                                  <span className="text-muted">
-                                    {algo.type}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                            <p className="mb-0 pb-0">
-                              {algo.description.length > 250
-                                ? `${algo.description.slice(0, 220)}...`
-                                : algo.description}
-                            </p>
-                          </div>
-                        </div>
-                      </Link>
-                    </div>
+                    <AlgoCard key={algo.id} algo={algo} />
                   ))}
                 </div>
               )}
-            </div>
-          </div>
-        );
-
-      case 'analytics':
-        return (
-          <div className="space-y-8">
-            <div className="bg-white p-6 rounded-xl shadow-sm">
-              <h2 className="text-xl font-semibold mb-4">Sales Overview</h2>
-              <Line data={chartData} options={{ responsive: true }} />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white p-6 rounded-xl shadow-sm">
-                <h3 className="text-lg font-semibold mb-3">Top Performing Algorithms</h3>
-                {/* Add your top algorithms component here */}
-              </div>
-              <div className="bg-white p-6 rounded-xl shadow-sm">
-                <h3 className="text-lg font-semibold mb-3">Revenue Breakdown</h3>
-                {/* Add your revenue breakdown component here */}
-              </div>
             </div>
           </div>
         );
@@ -495,11 +352,13 @@ export default function SellerDashboard() {
         return <AddAlgoForm onSuccess={handleAlgoSuccess} />;
 
       case 'manage listings':
-        return <ManageListings 
-          algos={approvedAlgos} 
-          unverifiedAlgos={pendingAlgos}
-          onDelete={handleAlgoDelete}
-        />;
+        return (
+          <ManageListings 
+            approvedAlgos={approvedAlgos}
+            unverifiedAlgos={pendingAlgos}
+            onSuccess={handleAlgoDelete}
+          />
+        );
 
       default:
         return null;
@@ -614,6 +473,94 @@ export default function SellerDashboard() {
     await loadAlgos(user.uid);
   };
 
+  const AlgoCard = ({ algo, isPending = false }: { algo: Algo | UnverifiedAlgo, isPending?: boolean }) => {
+    return (
+      <div className="col-6 col-md-2 mb-2 px-1">
+        {isPending ? (
+          <div onClick={() => {
+            Swal.fire({
+              title: 'Algorithm Pending Approval',
+              text: 'This algorithm is currently pending approval from our team. You can preview it while waiting.',
+              icon: 'info',
+              showCancelButton: true,
+              confirmButtonColor: '#7A49B7',
+              cancelButtonColor: '#d33',
+              confirmButtonText: 'Preview Algorithm',
+              cancelButtonText: 'Close'
+            }).then((result) => {
+              if (result.isConfirmed) {
+                window.location.href = `/mark/${algo.id}`;
+              }
+            });
+          }} className="card-link cursor-pointer">
+            <AlgoCardContent algo={algo} />
+          </div>
+        ) : (
+          <Link href={`/market/${algo.id}`} className="card-link">
+            <AlgoCardContent algo={algo} />
+          </Link>
+        )}
+      </div>
+    );
+  };
+
+  const AlgoCardContent = ({ algo }: { algo: Algo | UnverifiedAlgo }) => {
+    return (
+      <div className="card hover-card">
+        <div className="card-body product-card text-center p-0">
+          <div className="product_badge">
+            <span className="badge-new">{algo.platform}</span>
+          </div>
+          <Image
+            src={algo.image?.url || '/placeholder-image.png'}
+            width={100}
+            height={160}
+            alt={algo.name}
+            className="card-img-top"
+          />
+          <h5 className="card-title text-truncate">{algo.name}</h5>
+          <RatingStars rating={algo.rating} />
+          <div className="border mt-2">
+            <p className="py-2 my-0 text-center">
+              {algo.cost === "Free" ? "Free" : `$${algo.buy_price}`}
+            </p>
+          </div>
+        </div>
+
+        <div className="card-body p-2 details-card">
+          <div className="d-flex border-bottom border-2">
+            <div className="d-flex flex-column align-items-center">
+              <div className="d-flex align-items-center">
+                <Image
+                  src={algo.image?.url || '/placeholder-image.png'}
+                  width={30}
+                  height={50}
+                  alt={algo.name}
+                  className="me-2"
+                />
+                <p className="mb-0">{algo.name}</p>
+              </div>
+              <div className="d-flex justify-content-evenly w-100">
+                <span className="text-success">
+                  {algo.rating} ({algo.ratingCount})
+                </span>
+                <span className="text-muted">
+                  {algo.type}
+                </span>
+              </div>
+            </div>
+          </div>
+          <p className="mb-0 pb-0">
+            {'shortDescription' in algo 
+              ? `${algo.shortDescription?.slice(0, 220)}...`
+              : `${algo.description?.slice(0, 220)}...`
+            }
+          </p>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Header Section */}
@@ -680,7 +627,6 @@ export default function SellerDashboard() {
         {[
           'overview',
           'products',
-          'analytics',
           'settings'
         ].map((tab) => (
           <button

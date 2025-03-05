@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { db } from '../../../functions/firebase';
 import { collection, addDoc, doc, getDoc, updateDoc } from "firebase/firestore";
-import { AlgoType, Cost, AddAlgoFormProps, AlgoFormData } from '../../../types';
+import { AlgoType, Cost, AddAlgoFormProps, AlgoFormData, Identity, Status } from '../../../types';
 
 export function AddAlgoForm({ onSuccess }: Partial<AddAlgoFormProps>) {
   const [formData, setFormData] = useState<AlgoFormData>({
@@ -10,8 +10,13 @@ export function AddAlgoForm({ onSuccess }: Partial<AddAlgoFormProps>) {
     type: AlgoType.EAs,
     platform: '',
     shortDescription: '',
+    description: '',
     cost: Cost.Free,
-    version: ''
+    buy_price: 0,
+    demo_price: 0,
+    version: '',
+    identity: Identity.Internal,
+    status: Status.NotComplete
   });
 
   const [sellerInfo, setSellerInfo] = useState({
@@ -128,7 +133,6 @@ export function AddAlgoForm({ onSuccess }: Partial<AddAlgoFormProps>) {
       const descriptionFile = await uploadFile(files.description, 'md');
       const imageFile = await uploadFile(files.image, 'image');
       const appFile = await uploadFile(files.app, 'zip');
-      
       const screenshotFiles = await Promise.all(
         files.screenshots.map(file => uploadFile(file, 'screenshot'))
       );
@@ -137,31 +141,36 @@ export function AddAlgoForm({ onSuccess }: Partial<AddAlgoFormProps>) {
 
       await addDoc(collection(db, "unverifiedalgos"), {
         ...formData,
-        buy_price,
         sellerId: sellerInfo.id,
         sellerName: sellerInfo.name,
         sellerLocation: sellerInfo.location,
-        identity: "Internal",
-        description: descriptionFile.url,
-        md_description: descriptionFile.url, // Store full URL
-        md_path: descriptionFile.path,      // Store path for deletion
-        image: imageFile.url,
-        image_path: imageFile.path,
+        md: {
+          url: descriptionFile.url,
+          path: descriptionFile.path
+        },
+        image: {
+          url: imageFile.url,
+          path: imageFile.path
+        },
+        app: {
+          url: appFile.url,
+          path: appFile.path
+        },
         screenshots: screenshotFiles.map(file => ({
           url: file.url,
           path: file.path
         })),
-        app: appFile.url,
-        app_path: appFile.path,
         uploaded: new Date().toISOString(),
-        status: 'Pending',
+        updated: new Date().toISOString(),
+        downloads: 0,
         rating: 0,
         ratingCount: 0,
         commentCount: 0,
-        downloads: 0,
         comments: [],
         reviews: [],
-        ratings: []
+        ratings: [],
+        downloadLink: '',
+        remoteDownloadLink: ''
       });
 
       const userRef = doc(db, "users", sellerInfo.id);
@@ -189,8 +198,13 @@ export function AddAlgoForm({ onSuccess }: Partial<AddAlgoFormProps>) {
         type: AlgoType.EAs,
         platform: '',
         shortDescription: '',
+        description: '',
         cost: Cost.Free,
-        version: ''
+        buy_price: 0,
+        demo_price: 0,
+        version: '',
+        identity: Identity.Internal,
+        status: Status.NotComplete
       });
 
       // Reset all files state

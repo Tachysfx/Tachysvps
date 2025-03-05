@@ -6,41 +6,44 @@ import { toast } from "react-toastify";
 import { deleteDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../../functions/firebase';
 import { EditAlgoForm } from './EditAlgoForm';
-import { Identity, Algo } from '../../../types';
+import { Identity, Algo, UnverifiedAlgo } from '../../../types';
 
 interface ManageListingsProps {
-  algos: Algo[];
-  unverifiedAlgos: Algo[];
-  onDelete: () => void;
+  approvedAlgos: Algo[];
+  unverifiedAlgos: UnverifiedAlgo[];
+  onSuccess: () => void;
 }
 
-export function ManageListings({ algos = [], unverifiedAlgos = [], onDelete }: ManageListingsProps) {
+export function ManageListings({ approvedAlgos, unverifiedAlgos, onSuccess }: ManageListingsProps) {
   const [showEditForm, setShowEditForm] = React.useState(false);
-  const [selectedAlgo, setSelectedAlgo] = React.useState<Algo | null>(null);
+  const [selectedAlgo, setSelectedAlgo] = React.useState<Algo | UnverifiedAlgo | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  const deleteOldFile = async (filePath: string) => {
+  const deleteOldFile = async (path: string) => {
     try {
-      const response = await fetch('/api/delete', {
-        method: 'POST',
+      if (!path) return;
+      
+      const response = await fetch('/api/storage', {
+        method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ filePath }),
+        body: JSON.stringify({ 
+          path,
+          access: 'private'
+        }),
       });
 
       if (!response.ok) {
         throw new Error('Failed to delete file');
       }
-
-      console.log('Successfully deleted file:', filePath);
-    } catch (error: any) {
-      console.error('Error deleting file:', error.message, 'Path:', filePath);
+    } catch (error) {
+      console.error('Error deleting file:', error);
     }
   };
 
-  const handleDelete = async (algo: Algo) => {
+  const handleDelete = async (algo: Algo | UnverifiedAlgo) => {
     const result = await Swal.fire({
       title: 'Are you sure?',
       text: "You won't be able to revert this! All associated files will also be deleted.",
@@ -53,65 +56,44 @@ export function ManageListings({ algos = [], unverifiedAlgos = [], onDelete }: M
 
     if (result.isConfirmed) {
       try {
-        console.log('Starting deletion process for algo:', algo);
-        toast.info("Deleting algorithm...", { autoClose: false });
-
+        // Delete files from blob storage
         if (algo.identity === Identity.Internal) {
-          // Delete files from blob storage
-          const filesToDelete = [
-            { path: algo.md_path, folder: 'File' },
-            { path: algo.image_path, folder: 'Algos_Images' },
-            { path: algo.app_path, folder: 'Bots' }
-          ];
-
-          if (algo.screenshots?.length > 0) {
-            algo.screenshots.forEach(screenshot => {
-              filesToDelete.push({
-                path: screenshot.path,
-                folder: 'Algos_Images'
-              });
-            });
+          // Delete description file
+          if ('md' in algo && algo.md?.path) {
+            await deleteOldFile(algo.md.path);
           }
-
-          // Delete all files
-          await Promise.all(
-            filesToDelete.map(file => 
-              fetch('/api/storage', {
-                method: 'DELETE',
-                body: JSON.stringify({
-                  path: file.path,
-                  folder: file.folder,
-                  access: 'private'
-                }),
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-              })
-            )
-          );
+          
+          // Delete main image
+          if (algo.image?.path) {
+            await deleteOldFile(algo.image.path);
+          }
+          
+          // Delete app file
+          if (algo.app?.path) {
+            await deleteOldFile(algo.app.path);
+          }
+          
+          // Delete screenshots
+          if (algo.screenshots?.length) {
+            await Promise.all(
+              algo.screenshots.map(screenshot => 
+                screenshot.path ? deleteOldFile(screenshot.path) : Promise.resolve()
+              )
+            );
+          }
         }
 
-        // Find which collection the algo is in
-        let collectionName;
-        const isInUnverified = unverifiedAlgos.some(a => a.id === algo.id);
-        const isInAlgos = algos.some(a => a.id === algo.id);
-
-        if (isInUnverified) {
-          collectionName = 'unverifiedalgos';
-        } else if (isInAlgos) {
-          collectionName = 'algos';
+        // Delete from Firestore
+        if ('md' in algo) {
+          await deleteDoc(doc(db, 'unverifiedalgos', algo.id));
         } else {
-          throw new Error('Algorithm not found in any collection');
+          await deleteDoc(doc(db, 'algos', algo.id));
         }
-
-        console.log('Deleting from collection:', collectionName);
-        await deleteDoc(doc(db, collectionName, algo.id));
 
         const userRef = doc(db, "users", algo.sellerId);
         const userDoc = await getDoc(userRef);
         const currentActivities = userDoc.data()?.activities2 || [];
 
-        // Add deletion activity
         await updateDoc(userRef, {
           activities2: [
             {
@@ -123,27 +105,21 @@ export function ManageListings({ algos = [], unverifiedAlgos = [], onDelete }: M
           ].slice(0, 5)
         });
 
-        toast.dismiss();
         toast.success('Algorithm deleted successfully');
-        
-        // Call onDelete to refresh the data
-        onDelete();
-        window.location.reload();
-
+        onSuccess();
       } catch (error) {
         console.error('Error in deletion process:', error);
-        toast.dismiss();
         toast.error('Failed to delete algorithm');
       }
     }
   };
 
-  const handleEdit = (algo: Algo) => {
+  const handleEdit = (algo: Algo | UnverifiedAlgo) => {
     setSelectedAlgo(algo);
     setShowEditForm(true);
   };
 
-  const allAlgos = [...(Array.isArray(algos) ? algos : []), ...(Array.isArray(unverifiedAlgos) ? unverifiedAlgos : [])];
+  const allAlgos = [...(Array.isArray(approvedAlgos) ? approvedAlgos : []), ...(Array.isArray(unverifiedAlgos) ? unverifiedAlgos : [])];
   
   // Pagination calculations
   const totalPages = Math.ceil(allAlgos.length / itemsPerPage);
@@ -156,12 +132,21 @@ export function ManageListings({ algos = [], unverifiedAlgos = [], onDelete }: M
   };
 
   if (showEditForm && selectedAlgo) {
+    // Type guard to ensure proper type handling
+    const isUnverifiedAlgo = unverifiedAlgos.some(a => a.id === selectedAlgo.id);
+    
     return (
       <EditAlgoForm 
-        algo={selectedAlgo} 
-        onSuccess={() => setShowEditForm(false)}
+        algo={isUnverifiedAlgo 
+          ? selectedAlgo as UnverifiedAlgo 
+          : selectedAlgo as Algo
+        }
+        onSuccess={() => {
+          setShowEditForm(false);
+          onSuccess();
+        }}
         onCancel={() => setShowEditForm(false)}
-        unverifiedAlgos={unverifiedAlgos}
+        isUnverified={isUnverifiedAlgo}
       />
     );
   }

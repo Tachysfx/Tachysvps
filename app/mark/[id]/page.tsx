@@ -8,8 +8,10 @@ import Image from 'next/image';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faStar } from '@fortawesome/free-solid-svg-icons';
 import Link from 'next/link';
-import { UnverifiedAlgo, Role } from '../../types'; 
+import { UnverifiedAlgo, Role, Algo } from '../../types';
 import { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
+import Loading from '../../loading';
 
 function formatDate(date: string | Date): string {
     if (!date) return '';
@@ -21,103 +23,144 @@ function formatDate(date: string | Date): string {
     });
 }
 
-async function fetchMarkdownContent(filePath: string | undefined) {
-    if (!filePath) {
+async function fetchMarkdownContent(mdData: { url: string, path: string } | undefined) {
+    if (!mdData?.url) {
         return 'No content available';
     }
 
     try {
-        // Extract just the filename from the full path
-        const fileName = filePath.split('/').pop();
-        if (!fileName) {
-            throw new Error('Invalid file path');
+        // Get the current user's session
+        const sessionData = sessionStorage.getItem('user');
+        if (!sessionData) {
+            throw new Error('User not authenticated');
         }
-        
-        // Use absolute URL for server component
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-        const response = await fetch(`${baseUrl}/api/markdown?path=${fileName}`, {
-            cache: 'no-store' // Disable caching to always get fresh content
-        });
-        
+
+        const response = await fetch(mdData.url);
         if (!response.ok) {
             throw new Error('Failed to fetch markdown content');
         }
+
         const text = await response.text();
-        return text;
+        return text || 'No content available';
     } catch (error) {
         console.error('Error fetching markdown:', error);
         return 'Failed to load content';
     }
 }
 
-export default async function Page({ params }: {params: Promise< {id: string}>}) {
+export default function Page({ params }: {params: Promise< {id: string}>}) {
     const [isAdmin, setIsAdmin] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [algoData, setAlgoData] = useState<(Algo | UnverifiedAlgo) & { markdownPath?: string }>();
+    const [markdownContent, setMarkdownContent] = useState<string>('');
+    const [error, setError] = useState<string>('');
 
     useEffect(() => {
-        const sessionData = sessionStorage.getItem('user');
-        if (sessionData) {
-            const userData = JSON.parse(sessionData);
-            if (userData.role === Role.Admin) {
-                setIsAdmin(true);
+        const loadData = async () => {
+            try {
+                setIsLoading(true);
+                const sessionData = sessionStorage.getItem('user');
+                if (!sessionData) {
+                    setError('Please login to view this content');
+                    return;
+                }
+
+                const userData = JSON.parse(sessionData);
+                setIsAdmin(userData.role === Role.Admin);
+
+                // Try to fetch from unverifiedalgos first
+                let algoRef = doc(db, "unverifiedalgos", (await params).id);
+                let algoSnap = await getDoc(algoRef);
+                let isFromAlgos = false;
+                
+                // If not found in unverifiedalgos, try algos collection
+                if (!algoSnap.exists()) {
+                    algoRef = doc(db, "algos", (await params).id);
+                    algoSnap = await getDoc(algoRef);
+                    isFromAlgos = true;
+                    
+                    if (!algoSnap.exists()) {
+                        setError('Algorithm not found');
+                        return;
+                    }
+                }
+
+                const data = algoSnap.data();
+                
+                if (isFromAlgos) {
+                    // Handle verified algo
+                    const verifiedAlgo = {
+                        ...data,
+                        id: algoSnap.id,
+                        markdownPath: data.md_path,
+                        markdownUrl: data.md_description
+                    } as Algo & { markdownPath: string, markdownUrl: string };
+                    setAlgoData(verifiedAlgo);
+
+                    // Fetch markdown content using URL
+                    const content = await fetchMarkdownContent({
+                        url: data.md_description,
+                        path: data.md_path
+                    });
+                    setMarkdownContent(content);
+                } else {
+                    // Handle unverified algo
+                    const unverifiedAlgo = {
+                        ...data,
+                        id: algoSnap.id,
+                        markdownPath: data.md.path,
+                        markdownUrl: data.md.url
+                    } as UnverifiedAlgo & { markdownPath: string, markdownUrl: string };
+                    setAlgoData(unverifiedAlgo);
+
+                    // Fetch markdown content using URL
+                    const content = await fetchMarkdownContent(data.md);
+                    setMarkdownContent(content);
+                }
+
+            } catch (error) {
+                console.error('Error loading algorithm:', error);
+                setError('Failed to load algorithm data');
+                toast.error('Failed to load algorithm data');
+            } finally {
+                setIsLoading(false);
             }
-        }
-    }, []);
+        };
+
+        loadData();
+    }, [(params)]);
+
+    if (isLoading) {
+        return <Loading />;
+    }
+
+    if (error) {
+        return <div className="text-center p-4">{error}</div>;
+    }
+
+    if (!algoData) {
+        return <div className="text-center p-4">No data available</div>;
+    }
 
     const handleApprove = () => {
         // Placeholder function for approving the algorithm
         console.log('Approve function to be implemented');
     };
 
-    // Try to fetch from unverifiedalgos first
-    let algoRef = doc(db, "unverifiedalgos", (await params).id);
-    let algoSnap = await getDoc(algoRef);
-    
-    // If not found in unverifiedalgos, try algos collection
-    if (!algoSnap.exists()) {
-        algoRef = doc(db, "algos", (await params).id);
-        algoSnap = await getDoc(algoRef);
-        
-        if (!algoSnap.exists()) {
-            return <div>Algorithm not found</div>;
-        }
-    }
-
-    const algoData = algoSnap.data();
-    const isFromAlgos = !algoSnap.ref.parent.id.includes('unverified');
-
-    // Handle field mapping based on which collection it's from
-    const enrichedAlgo = {
-        id: algoSnap.id,
-        ...algoData,
-        // For algos collection: description is short description, md_description is full description
-        // For unverifiedalgos: shortDescription and description are already correct
-        markdownPath: isFromAlgos ? algoData.md_description : algoData.description,
-        description: isFromAlgos ? algoData.description : algoData.shortDescription
-    } as UnverifiedAlgo & { markdownPath: string };
-
-    // Get the markdown content
-    let markdownContent;
-    try {
-        markdownContent = await fetchMarkdownContent(enrichedAlgo.markdownPath);
-    } catch (error) {
-        console.error('Error fetching markdown:', error);
-        markdownContent = enrichedAlgo.description || 'Failed to load content';
-    }
-
-    const author = `/v6/seller?id=${enrichedAlgo.sellerId}`;
+    const author = `/v6/seller?id=${algoData.sellerId}`;
 
     return (
         <>
             <div className="border-bottom border-2">
                 <div className="d-flex align-items-center">
-                    <h3 className="mx-2 text-purple">{enrichedAlgo.name} </h3>
+                    <h3 className="mx-2 text-purple">{algoData.name} </h3>
                     <div className="ms-2">
                         {[...Array(5)].map((_, index) => (
                             <FontAwesomeIcon
                                 key={index}
                                 icon={faStar}
                                 className={
-                                    index < Math.round(Number(enrichedAlgo.rating))
+                                    index < Math.round(Number(algoData.rating))
                                         ? "text-warning"
                                         : ""
                                 }
@@ -145,20 +188,20 @@ export default async function Page({ params }: {params: Promise< {id: string}>})
                         <div className="content-left px-2">
                             <div className="text-center mt-3">
                                 <Image
-                                    src={enrichedAlgo.image.url}
+                                    src={algoData.image.url}
                                     width={170}
                                     height={170}
-                                    alt={enrichedAlgo.name}
+                                    alt={algoData.name}
                                     className="mx-auto"
                                 />
-                                <p className="fw-bolder my-0">${enrichedAlgo.buy_price}</p>
+                                <p className="fw-bolder my-0">${algoData.buy_price}</p>
                                 <div className="my-1">
                                     {[...Array(5)].map((_, index) => (
                                         <FontAwesomeIcon
                                             key={index}
                                             icon={faStar}
                                             className={
-                                                index < Math.round(Number(enrichedAlgo.rating))
+                                                index < Math.round(Number(algoData.rating))
                                                     ? "text-warning"
                                                     : ""
                                             }
@@ -167,13 +210,13 @@ export default async function Page({ params }: {params: Promise< {id: string}>})
                                 </div>
                             </div>
                             <div className="uncut">
-                                <p className="mb-1">Type: {enrichedAlgo.type}</p>
-                                <p className="mb-1">Seller: {enrichedAlgo.sellerName}</p>
-                                <p className="mb-1">Published: {formatDate(enrichedAlgo.uploaded)}</p>
-                                <p className="mb-1">Updated: {formatDate(enrichedAlgo.updated)}</p>
-                                <p className="mb-1">Version: {enrichedAlgo.version}</p>
-                                <p className="mb-1">Downloads: {enrichedAlgo.downloads || 0}</p>
-                                <Link href={author} type='button' className="btn btn-sm btn-outline-purple mb-5">other algos from this seller</Link>
+                                <p className="mb-1">Type: {algoData.type}</p>
+                                <p className="mb-1">Seller: {algoData.sellerName}</p>
+                                <p className="mb-1">Published: {formatDate(algoData.uploaded)}</p>
+                                <p className="mb-1">Updated: {formatDate(algoData.updated)}</p>
+                                <p className="mb-1">Version: {algoData.version}</p>
+                                <p className="mb-1">Downloads: {algoData.downloads || 0}</p>
+                                {/* <Link href={author} type='button' className="btn btn-sm btn-outline-purple mb-5">other algos from this seller</Link> */}
                             </div>
                             <hr />
                             <CardSideBar />
@@ -191,7 +234,7 @@ export default async function Page({ params }: {params: Promise< {id: string}>})
                             <div className="text-center mb-4">
                                 <div id="carouselExampleAutoplaying" className="carousel carousel-fade slide mb-4" data-bs-ride="carousel">
                                     <div className="carousel-inner">
-                                        {enrichedAlgo.screenshots?.map((screenshot, index) => (
+                                        {algoData.screenshots?.map((screenshot, index) => (
                                             <div key={index} className={`carousel-item ${index === 0 ? "active" : ""}`}>
                                                 <Image
                                                     src={screenshot.url}

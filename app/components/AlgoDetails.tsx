@@ -304,7 +304,7 @@ export default function AlgoDetails({ enrichedAlgo, enrichedAlgos, id }: AlgoDet
                 <p className="mb-1">Updated: {enrichedAlgo.identity === "Internal" ? formatDate(enrichedAlgo.updated) : enrichedAlgo.updated}</p>
                 <p className="mb-1">Version: {enrichedAlgo.version}</p>
                 <p className="mb-1">Downloads: {enrichedAlgo.downloads}</p>
-                <Link href={author} type='button' className="btn btn-sm btn-outline-purple mb-2">other algos from this seller</Link>
+                {/* <Link href={author} type='button' className="btn btn-sm btn-outline-purple mb-2">other algos from this seller</Link> */}
               </div>
               <hr />
               <div className="text-center">

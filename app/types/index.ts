@@ -17,9 +17,13 @@ export interface AlgoFormData {
     type: AlgoType;
     platform: string;
     shortDescription: string;
+    description: string;
     cost: Cost;
     buy_price?: number;
+    demo_price: number;
     version: string;
+    identity: Identity;
+    status: Status;
 }
 
 export type Seller = {
@@ -448,8 +452,10 @@ export interface UnverifiedAlgo {
   type: AlgoType;
   platform: string;
   name: string;
-  description: string;
-  descriptionHTML?: string;
+  md: {
+    url: string;
+    path: string;
+  };
   image: {
     url: string;
     path: string;
@@ -464,8 +470,6 @@ export interface UnverifiedAlgo {
   version: string;
   uploaded: string;
   updated: string;
-  md_description: string;
-  md_path?: string;
   ratings: Array<string>;
   rating: number;
   ratingCount: number;
@@ -559,20 +563,6 @@ export interface FileUploadResult {
     name: string;
     [key: string]: any;
   }
-}
-
-export interface AlgoFormData {
-  name: string;
-  shortDescription: string;
-  description: string;
-  type: AlgoType;
-  platform: string;
-  buy_price: number;
-  demo_price: number;
-  version: string;
-  identity: Identity;
-  cost: Cost;
-  status: Status;
 }
 
 export interface StorageOptions {

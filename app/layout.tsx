@@ -121,11 +121,11 @@ export default function RootLayout({
         <meta httpEquiv="Content-Language" content="en" />
       </head>
       <body className="antialiased bg-gray-100">
-        <Script
+        {/* <Script
           id="hs-script-loader"
           src="//js-na2.hs-scripts.com/242112440.js"
           strategy="afterInteractive"
-        />
+        /> */}
         <FontAwesomeLoader />
         <ToastContainer
           position="top-right"

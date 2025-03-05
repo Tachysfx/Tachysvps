@@ -2,28 +2,34 @@ import React, { useState, useRef } from 'react';
 import { toast } from 'react-toastify';
 import { db } from "../../../functions/firebase";
 import { doc, deleteDoc, updateDoc, setDoc, getDoc } from "firebase/firestore";
-import { AlgoType, Cost, Algo } from '../../../types';
+import { AlgoType, Cost, Algo, UnverifiedAlgo, Status, Identity } from '../../../types';
 import Swal from 'sweetalert2';
 
 interface EditAlgoFormProps {
-  algo: Algo;
+  algo: UnverifiedAlgo | Algo;
   onSuccess: () => void;
   onCancel: () => void;
-  unverifiedAlgos: Algo[];
+  isUnverified: boolean;
 }
 
-export function EditAlgoForm({ algo, onSuccess, onCancel, unverifiedAlgos }: EditAlgoFormProps) {
-  // Determine if the algo is from unverifiedalgos collection
-  const isFromUnverified = unverifiedAlgos.some(a => a.id === algo.id);
+export function EditAlgoForm({ algo, onSuccess, onCancel, isUnverified }: EditAlgoFormProps) {
+  // Type guard helper
+  const isUnverifiedAlgo = (algo: UnverifiedAlgo | Algo): algo is UnverifiedAlgo => {
+    return 'md' in algo;
+  };
 
   const [formData, setFormData] = useState({
     name: algo.name,
     type: algo.type,
     platform: algo.platform,
-    shortDescription: isFromUnverified ? algo.shortDescription : algo.description,
+    shortDescription: isUnverifiedAlgo(algo) 
+      ? algo.shortDescription 
+      : algo.description,
     cost: algo.cost,
     buy_price: algo.buy_price,
-    version: algo.version
+    demo_price: algo.demo_price,
+    version: algo.version,
+    identity: algo.identity
   });
 
   const [files, setFiles] = useState({
@@ -85,62 +91,81 @@ export function EditAlgoForm({ algo, onSuccess, onCancel, unverifiedAlgos }: Edi
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const deleteOldFile = async (path: string) => {
     try {
-      // Validate form data - prevent empty strings
-      const newFormData = Object.fromEntries(
-        Object.entries(formData).filter(([_, value]) => value !== '')
-      );
-
-      if (Object.keys(newFormData).length === 0 && !files.description && !files.image && !files.app && !files.screenshots.length) {
-        toast.error("No changes were made");
-        return;
-      }
-
-      const result = await Swal.fire({
-        title: 'Confirm Edit',
-        text: 'Editing will move this algorithm back to pending approval status. Continue?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, edit it'
+      const response = await fetch('/api/storage', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          path,
+          access: 'private'
+        }),
       });
 
-      if (!result.isConfirmed) return;
+      if (!response.ok) {
+        throw new Error('Failed to delete file');
+      }
+    } catch (error) {
+      console.error('Error deleting file:', error);
+    }
+  };
 
-      toast.info("Processing changes...", { autoClose: false });
-
-      // Determine which collection the algo is currently in
-      const isInUnverified = unverifiedAlgos.some(a => a.id === algo.id);
-
-      // Prepare the new algo data, maintaining all existing data
-      let newAlgoData = {
-        ...algo,           // Keep all existing data
-        ...newFormData,    // Override with any non-empty form data
-        status: 'pending', // Set status to pending
-        updated: new Date().toISOString(),
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      // Prepare base algo data
+      let newAlgoData: Partial<UnverifiedAlgo> = {
+        ...algo,
+        name: formData.name,
+        type: formData.type,
+        platform: formData.platform,
+        cost: formData.cost,
+        buy_price: formData.buy_price,
+        demo_price: formData.demo_price,
+        version: formData.version,
+        identity: formData.identity,
+        status: Status.NotComplete,
+        updated: new Date().toISOString()
       };
 
-      // If data is coming from algos collection (not from unverifiedalgos)
-      if (!isInUnverified) {
-        // Map the fields correctly for unverifiedalgos collection
+      // Handle the description/shortDescription based on algo type
+      if (isUnverified) {
+        newAlgoData.shortDescription = formData.shortDescription;
+      } else {
+        // Converting from Algo to UnverifiedAlgo
         newAlgoData = {
           ...newAlgoData,
-          shortDescription: newAlgoData.description,    // description from algos becomes shortDescription
-          description: newAlgoData.md_description || '' // md_description becomes description
+          shortDescription: formData.shortDescription,
+          md: {
+            url: (algo as Algo).md_description || '',
+            path: (algo as Algo).md_path || ''
+          }
+        };
+        // Remove Algo-specific fields
+        delete (newAlgoData as any).description;
+        delete (newAlgoData as any).descriptionHTML;
+        delete (newAlgoData as any).md_description;
+        delete (newAlgoData as any).md_path;
+      }
+
+      // Delete old files if they exist and new files are being uploaded
+      if (files.description) {
+        if (isUnverifiedAlgo(algo) && algo.md?.path) {
+          await deleteOldFile(algo.md.path);
+        }
+        const descriptionFile = await uploadFile(files.description, 'md');
+        newAlgoData.md = {
+          url: descriptionFile.url,
+          path: descriptionFile.path
         };
       }
 
-      // Handle file uploads with proper paths
-      if (files.description) {
-        const descriptionFile = await uploadFile(files.description, 'md');
-        newAlgoData.description = descriptionFile.url;
-        newAlgoData.md_description = descriptionFile.url;
-        newAlgoData.md_path = descriptionFile.path;
-      }
-
       if (files.image) {
+        if (algo.image?.path) {
+          await deleteOldFile(algo.image.path);
+        }
         const imageFile = await uploadFile(files.image, 'image');
         newAlgoData.image = {
           url: imageFile.url,
@@ -149,6 +174,9 @@ export function EditAlgoForm({ algo, onSuccess, onCancel, unverifiedAlgos }: Edi
       }
 
       if (files.app) {
+        if (algo.app?.path) {
+          await deleteOldFile(algo.app.path);
+        }
         const appFile = await uploadFile(files.app, 'zip');
         newAlgoData.app = {
           url: appFile.url,
@@ -157,6 +185,14 @@ export function EditAlgoForm({ algo, onSuccess, onCancel, unverifiedAlgos }: Edi
       }
 
       if (files.screenshots.length > 0) {
+        // Delete old screenshots if they exist
+        if (algo.screenshots?.length) {
+          await Promise.all(
+            algo.screenshots.map(screenshot => 
+              screenshot.path ? deleteOldFile(screenshot.path) : Promise.resolve()
+            )
+          );
+        }
         const screenshotFiles = await Promise.all(
           files.screenshots.map(file => uploadFile(file, 'screenshot'))
         );
@@ -166,22 +202,19 @@ export function EditAlgoForm({ algo, onSuccess, onCancel, unverifiedAlgos }: Edi
         }));
       }
 
-      // Update the existing document in unverifiedalgos if it's there,
-      // or move it from algos to unverifiedalgos if it's in algos
-      if (isInUnverified) {
-        // Update existing document in unverifiedalgos
+      // Update or move to unverifiedalgos collection
+      if (isUnverified) {
         await updateDoc(doc(db, 'unverifiedalgos', algo.id), newAlgoData);
       } else {
-        // Move from algos to unverifiedalgos but keep the same ID
         await setDoc(doc(db, 'unverifiedalgos', algo.id), newAlgoData);
         await deleteDoc(doc(db, 'algos', algo.id));
       }
 
+      // Update user activities
       const userRef = doc(db, "users", algo.sellerId);
       const userDoc = await getDoc(userRef);
       const currentActivities = userDoc.data()?.activities2 || [];
 
-      // Add edit activity
       await updateDoc(userRef, {
         activities2: [
           {
@@ -193,15 +226,11 @@ export function EditAlgoForm({ algo, onSuccess, onCancel, unverifiedAlgos }: Edi
         ].slice(0, 5)
       });
 
-      toast.dismiss();
-      toast.success("Algorithm updated and submitted for review");
-      
-      // Reload the page to reflect changes
-      window.location.reload();
+      toast.success("Algorithm updated successfully");
+      onSuccess();
 
     } catch (error) {
       console.error('Error updating algo:', error);
-      toast.dismiss();
       toast.error("Failed to update algorithm");
     }
   };
