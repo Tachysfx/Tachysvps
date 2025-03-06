@@ -3,27 +3,26 @@ import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../functions/firebase';
 import crypto from 'crypto';
 
-const WEBHOOK_SECRET = process.env.PAYONEER_WEBHOOK_SECRET;
+const WEBHOOK_SECRET = process.env.FLUTTERWAVE_WEBHOOK_SECRET;
 
-// Verify webhook signature
-function verifyPayoneerSignature(payload: string, signature: string): boolean {
+// Verify webhook signature for Flutterwave
+function verifyFlutterwaveSignature(payload: string, signature: string): boolean {
   if (!WEBHOOK_SECRET) return false;
   
-  const hmac = crypto
-    .createHmac('sha256', WEBHOOK_SECRET)
-    .update(payload)
+  const hash = crypto
+    .createHash('sha256')
+    .update(payload + WEBHOOK_SECRET)
     .digest('hex');
     
-  return hmac === signature;
+  return hash === signature;
 }
 
 export async function POST(request: Request) {
   try {
     const payload = await request.text();
-    const signature = request.headers.get('x-payoneer-signature');
+    const signature = request.headers.get('verif-hash');
 
-    // Verify webhook signature
-    if (!signature || !verifyPayoneerSignature(payload, signature)) {
+    if (!signature || !verifyFlutterwaveSignature(payload, signature)) {
       return NextResponse.json(
         { error: 'Invalid signature' },
         { status: 401 }
@@ -32,13 +31,13 @@ export async function POST(request: Request) {
 
     const event = JSON.parse(payload);
 
-    // Handle different event types
-    switch (event.type) {
-      case 'payment.completed': {
-        const { order_id, payment_id, amount } = event.data;
+    // Handle different Flutterwave event types
+    switch (event.event) {
+      case 'charge.completed': {
+        const { tx_ref, id, amount } = event.data;
         
         // Get order from Firestore
-        const orderRef = doc(db, 'orders', order_id);
+        const orderRef = doc(db, 'orders', tx_ref);
         const orderDoc = await getDoc(orderRef);
         
         if (!orderDoc.exists()) {
@@ -72,8 +71,8 @@ export async function POST(request: Request) {
           paymentStatus: 'completed',
           lastUpdated: new Date().toISOString(),
           paymentDetails: {
-            provider: 'payoneer',
-            paymentId: payment_id,
+            provider: 'flutterwave',
+            paymentId: id,
             amount: amount,
             paidAt: new Date().toISOString()
           }
@@ -81,7 +80,7 @@ export async function POST(request: Request) {
         break;
       }
 
-      // ... keep other existing event handlers (refund, dispute) ...
+      // ... handle other Flutterwave events as needed ...
     }
 
     return NextResponse.json({ received: true });

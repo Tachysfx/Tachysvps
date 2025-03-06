@@ -773,16 +773,31 @@ export default function Pay({ plan }: PayProps): React.ReactElement {
             customerEmail: sessionUser.email,
             orderId: orderRef.id,
             metadata: {
-              vpsOrderId: orderRef.id
+              vpsOrderId: orderRef.id,
+              userName: userDoc.data()?.name, // Add user name
+              planType: selectedPlan,
+              duration: length,
+              quantity: quantity,
+              region: region
             }
           }),
         });
 
         if (!paymentResponse.ok) {
-          throw new Error('Failed to create payment');
+          const errorData = await paymentResponse.json();
+          throw new Error(errorData.error || 'Failed to create payment');
         }
 
-        const { paymentUrl } = await paymentResponse.json();
+        const { paymentUrl, paymentId } = await paymentResponse.json();
+        if (!paymentUrl) {
+          throw new Error('Invalid payment URL received');
+        }
+
+        // Store payment ID in the order
+        await updateDoc(doc(db, "orders", orderRef.id), {
+          paymentId: paymentId
+        });
+
         window.location.href = paymentUrl;
       } else {
         toast.warning('Payment cancelled. Your order is saved but pending payment.');

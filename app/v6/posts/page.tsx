@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { db, auth, logAnalyticsEvent } from '../../functions/firebase';
-// import { deleteOldFile } from '@/app/intermediaries/fileUtils';
 import { 
   collection, 
   query, 

@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { db } from '../../functions/firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { Algo, UnverifiedAlgo, Cost } from '../../types';
 import Link from 'next/link';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEye } from '@fortawesome/free-solid-svg-icons';
+import { faEye, faCheck } from '@fortawesome/free-solid-svg-icons';
+import { toast } from 'react-toastify';
 
 export default function AdminAlgosPage() {
   const [totalAlgos, setTotalAlgos] = useState(0);
@@ -14,24 +15,57 @@ export default function AdminAlgosPage() {
   const [freeAlgos, setFreeAlgos] = useState(0);
   const [premiumAlgos, setPremiumAlgos] = useState(0);
   const [unverifiedAlgos, setUnverifiedAlgos] = useState<UnverifiedAlgo[]>([]);
+  const [unverifiedCount, setUnverifiedCount] = useState(0);
+
+  const fetchData = async () => {
+    const algosSnapshot = await getDocs(collection(db, 'algos'));
+    const unverifiedAlgosSnapshot = await getDocs(collection(db, 'unverifiedalgos'));
+
+    const algos = algosSnapshot.docs.map(doc => doc.data() as Algo);
+    const unverified = unverifiedAlgosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UnverifiedAlgo));
+
+    setTotalAlgos(algos.length + unverified.length);
+    setVerifiedAlgos(algos.length);
+    setFreeAlgos(algos.filter(algo => algo.cost === Cost.Free).length);
+    setPremiumAlgos(algos.filter(algo => algo.cost === Cost.Premium).length);
+    setUnverifiedAlgos(unverified);
+    setUnverifiedCount(unverified.length);
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      const algosSnapshot = await getDocs(collection(db, 'algos'));
-      const unverifiedAlgosSnapshot = await getDocs(collection(db, 'unverifiedalgos'));
-
-      const algos = algosSnapshot.docs.map(doc => doc.data() as Algo);
-      const unverified = unverifiedAlgosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UnverifiedAlgo));
-
-      setTotalAlgos(algos.length + unverified.length);
-      setVerifiedAlgos(algos.length);
-      setFreeAlgos(algos.filter(algo => algo.cost === Cost.Free).length);
-      setPremiumAlgos(algos.filter(algo => algo.cost === Cost.Premium).length);
-      setUnverifiedAlgos(unverified);
-    };
-
     fetchData();
   }, []);
+
+  const handleApprove = async (algo: UnverifiedAlgo) => {
+    try {
+      // Convert UnverifiedAlgo to Algo type
+      const verifiedAlgo: Partial<Algo> = {
+        ...algo,
+        description: algo.shortDescription,
+        descriptionHTML: '', // Will be generated from md content
+        md_description: algo.md.url,
+        md_path: algo.md.path,
+      };
+
+      // Remove UnverifiedAlgo specific fields
+      delete (verifiedAlgo as any).md;
+      delete (verifiedAlgo as any).shortDescription;
+
+      // Add to algos collection
+      await setDoc(doc(db, 'algos', algo.id), verifiedAlgo);
+      
+      // Delete from unverifiedalgos collection
+      await deleteDoc(doc(db, 'unverifiedalgos', algo.id));
+
+      toast.success('Algorithm approved successfully');
+      
+      // Refresh data
+      fetchData();
+    } catch (error) {
+      console.error('Error approving algo:', error);
+      toast.error('Failed to approve algorithm');
+    }
+  };
 
   return (
     <div className="container mt-4">
@@ -69,10 +103,18 @@ export default function AdminAlgosPage() {
             </div>
           </div>
         </div>
+        <div className="col-md-3">
+          <div className="card text-white bg-danger mb-3">
+            <div className="card-body">
+              <h5 className="card-title">Pending Approval</h5>
+              <p className="card-text">{unverifiedCount}</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <h2 className="mb-3">Unverified Algos</h2>
-      <table className="table table-hover">
+      <table className="table table-hover mb-5">
         <thead className="thead-dark">
           <tr>
             <th>Name</th>
@@ -88,11 +130,21 @@ export default function AdminAlgosPage() {
               <td>{algo.sellerName}</td>
               <td>{new Date(algo.uploaded).toLocaleDateString()}</td>
               <td>
-                <Link href={`/mark/${algo.id}`}>
-                  <a className="btn btn-outline-primary">
+                <div className="d-flex gap-2">
+                  <Link 
+                    href={`/mark/${algo.id}`}
+                    className="btn btn-outline-primary btn-sm"
+                  >
                     <FontAwesomeIcon icon={faEye} /> Preview
-                  </a>
-                </Link>
+                  </Link>
+                  <button
+                    onClick={() => handleApprove(algo)}
+                    className="btn btn-outline-success btn-sm"
+                    title="Approve algorithm"
+                  >
+                    <FontAwesomeIcon icon={faCheck} /> Approve
+                  </button>
+                </div>
               </td>
             </tr>
           ))}

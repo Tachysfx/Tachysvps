@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { LayoutDashboard, Users, BadgePoundSterling, Server, Bot, Album, CreditCard, Store, FileEdit } from 'lucide-react'
+import { LayoutDashboard, Users, BadgePoundSterling, Server, Bot, Album, CreditCard, Store, FileEdit, Home } from 'lucide-react'
 import AdminProtected from "../components/AdminProtected"
 
 interface LayoutProps {
@@ -69,6 +69,12 @@ export default function AdminLayout({ children }: LayoutProps) {
                             <Link className="nav-link d-flex align-items-center px-3 py-2 hover:bg-purple-600 hover:text-white group" href="/admin/posts">
                                 <FileEdit className="text-purple-600 w-5 h-5 me-3 group-hover:text-white" />
                                 <span>Posts</span>
+                            </Link>
+                            </li>
+                            <li className="nav-item">
+                            <Link className="nav-link d-flex align-items-center px-3 py-2 hover:bg-purple-600 hover:text-white group" href="/">
+                                <Home className="text-purple-600 w-5 h-5 me-3 group-hover:text-white" />
+                                <span>Back to Home</span>
                             </Link>
                             </li>
                         </ul>

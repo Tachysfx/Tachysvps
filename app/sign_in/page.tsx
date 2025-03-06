@@ -764,7 +764,7 @@ export default function SignInPage() {
                 </span>
                 <span className="text-gray-800"> VPS</span>
               </h1>
-              <p className="mt-4 text-lg text-gray-600 leading-relaxed">
+              <p className="mt-4 text-lg text-gray-600 leading-tight">
                 Enterprise-grade Virtual Private Servers for every professional need. 
                 Powered by NVMe storage and ultra-low latency networks across global data centers.
               </p>

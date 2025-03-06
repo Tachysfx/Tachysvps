@@ -18,7 +18,7 @@ export default function ContactPage() {
           <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight">
             Let&apos;s Start a Conversation
           </h1>
-          <p className="text-xl text-purple-100 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-xl text-purple-100 max-w-2xl mx-auto leading-tight">
             Whether you need technical support, have questions about our services, or want to explore custom solutions,
             we&apos;re here to help 24/7.
           </p>

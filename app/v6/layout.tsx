@@ -1,3 +1,5 @@
+"use client"
+
 import { ReactNode } from "react";
 import {
   LayoutDashboard,
@@ -14,36 +16,14 @@ import {
   Users,
   BarChart2,
   HeadphonesIcon,
+  LogInIcon,
 } from "lucide-react";
 import CardSideBar from "../components/SideBar";
-import type { Metadata } from 'next'
 import Link from 'next/link';
-import ProtectedV6Layout from "../components/ProtectedV6Layout";
-import AuthHandler from "../components/AuthHandler";
-
-export const metadata: Metadata = {
-    title: "Tachys FX",
-    description: "Experience lightning-fast VPS hosting with unmatched security and 24/7 support. Perfect for developers, businesses, and anyone needing scalable, reliable infrastructure.",
-    applicationName: "High-Performance VPS Hosting",
-    keywords: "FOREX, Tachys VPS, Forex VPS hosting, Forex trading servers, low-latency Forex VPS, secure Forex VPS, fast VPS for Forex, trading server hosting, Forex VPS solutions, high-speed trading VPS, optimized VPS for Forex, dedicated Forex VPS, low ping Forex VPS, Forex VPS with SSD, MT4 VPS hosting, MetaTrader VPS, reliable Forex VPS, VPS for Forex brokers, Forex server uptime, premium Forex VPS, latency-optimized VPS, trading VPS infrastructure, VPS for financial markets, VPS with instant setup, customizable Forex VPS, 24/7 Forex VPS support, high-performance trading VPS, Forex VPS for EAs, stable VPS for Forex",
-    icons: {
-      icon: '/favicon.png',
-      shortcut: '/favicon.png',
-      apple: '/favicon.png',
-      other: [
-        {
-          rel: 'icon',
-          url: '/favicon.png',
-          sizes: '192x192',
-        },
-        {
-          rel: 'icon',
-          url: '/favicon.png',
-          sizes: '512x512',
-        },
-      ],
-    },
-};
+import { getAuth, signOut } from "firebase/auth";
+import { getDoc, doc, updateDoc } from "firebase/firestore"
+import Swal from 'sweetalert2';
+import { db } from "../functions/firebase";
 
 
 interface LayoutProps {
@@ -52,6 +32,45 @@ interface LayoutProps {
 
 
 export default function Layout({ children }: LayoutProps) {
+  const handleLogout = async () => {
+    const auth = getAuth();
+    try {
+      if (auth.currentUser) {
+        const userRef = doc(db, "users", auth.currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        const currentActivities = userDoc.data()?.activities1 || [];
+
+        const logoutActivity = {
+          action: "Logout",
+          date: new Date().toISOString(),
+          details: "User logged out"
+        };
+
+        await updateDoc(userRef, {
+          activities1: [logoutActivity, ...currentActivities].slice(0, 5)
+        });
+      }
+
+      await signOut(auth);
+      sessionStorage.clear();
+      await Swal.fire({
+        icon: 'success',
+        title: 'Success!',
+        text: 'Successfully logged out.',
+        confirmButtonColor: '#7A49B7'
+      });
+      window.location.href = '/';
+    } catch (error) {
+      console.error("Error logging out:", error);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error!',
+        text: 'Failed to log out.',
+        confirmButtonColor: '#7A49B7'
+      });
+    }
+  };
+
   return (
     <>
       <div className="container-fluid">
@@ -139,6 +158,15 @@ export default function Layout({ children }: LayoutProps) {
                     <HeadphonesIcon className="text-purple-600 w-5 h-5 me-3 group-hover:text-white" />
                     <span>Support</span>
                   </Link>
+                </li>
+                <li className="nav-item">
+                  <button 
+                    onClick={handleLogout}
+                    className="nav-link d-flex align-items-center px-3 py-2 hover:bg-purple-600 hover:text-white group w-full text-left"
+                  >
+                    <LogInIcon className="text-purple-600 w-5 h-5 me-3 group-hover:text-white" />
+                    <span>Log Out</span>
+                  </button>
                 </li>
               </ul>
               <hr />

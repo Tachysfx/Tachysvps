@@ -121,11 +121,34 @@ export default function RootLayout({
         <meta httpEquiv="Content-Language" content="en" />
       </head>
       <body className="antialiased bg-gray-100">
-        {/* <Script
-          id="hs-script-loader"
-          src="//js-na2.hs-scripts.com/242112440.js"
-          strategy="afterInteractive"
-        /> */}
+        <Script
+          id="tawk-script"
+          strategy="lazyOnload"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.addEventListener('load', function() {
+                var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
+                (function(){
+                  var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
+                  s1.async=true;
+                  s1.src='https://embed.tawk.to/67c915513c0d4319094e7a92/1ilknmhne';
+                  s1.charset='UTF-8';
+                  s1.setAttribute('crossorigin','*');
+                  if (s0) s0.parentNode.insertBefore(s1,s0);
+
+                  // Add custom CSS for spacing
+                  var style = document.createElement('style');
+                  style.innerHTML = \`
+                    #tawk-to-iframe-container {
+                      margin-bottom: 70px !important;
+                    }
+                  \`;
+                  document.head.appendChild(style);
+                })();
+              });
+            `
+          }}
+        />
         <FontAwesomeLoader />
         <ToastContainer
           position="top-right"

@@ -107,7 +107,7 @@ const About = () => {
                   <tech.icon className="w-10 h-10 text-purple-600 group-hover:text-purple-700 transition-colors" />
                 </div>
                 <h3 className="text-xl font-bold text-purple-600 mb-3">{tech.name}</h3>
-                <p className="text-gray-600 leading-relaxed">{tech.description}</p>
+                <p className="text-gray-600 leading-tight">{tech.description}</p>
               </div>
             ))}
           </div>
@@ -122,7 +122,7 @@ const About = () => {
               </div>
               <h3 className="text-2xl font-bold text-purple-600">Our Mission</h3>
             </div>
-            <p className="text-gray-600 leading-relaxed">
+            <p className="text-gray-600 leading-tight">
               Our mission is to deliver reliable, high-performance VPS hosting solutions that empower businesses and individuals to achieve their goals, whether they're scaling web applications, hosting game servers, developing software, or executing trades.
             </p>
           </div>
@@ -134,7 +134,7 @@ const About = () => {
               </div>
               <h3 className="text-2xl font-bold text-purple-600">Our Vision</h3>
             </div>
-            <p className="text-gray-600 leading-relaxed">
+            <p className="text-gray-600 leading-tight">
               To be the leading provider of versatile VPS solutions, setting new standards in performance, reliability, and innovation across all digital sectors - from web hosting to financial markets.
             </p>
           </div>
@@ -221,7 +221,7 @@ const About = () => {
         <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-2xl p-12 mb-16 text-white">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl font-bold mb-6">Our Story</h2>
-            <p className="text-purple-100 leading-relaxed">
+            <p className="text-purple-100 leading-tight">
               Tachys VPS was founded in 2020 with a bold vision: to provide enterprise-grade VPS solutions that power the digital world. What started as a commitment to excellence has grown into a comprehensive platform serving diverse needs - from web hosting and game servers to development environments and trading infrastructure.
             </p>
           </div>

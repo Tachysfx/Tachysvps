@@ -142,11 +142,6 @@ export default function Page({ params }: {params: Promise< {id: string}>}) {
         return <div className="text-center p-4">No data available</div>;
     }
 
-    const handleApprove = () => {
-        // Placeholder function for approving the algorithm
-        console.log('Approve function to be implemented');
-    };
-
     const author = `/v6/seller?id=${algoData.sellerId}`;
 
     return (
@@ -172,14 +167,6 @@ export default function Page({ params }: {params: Promise< {id: string}>}) {
                     </div>
                 </div>
             </div>
-
-            {isAdmin && (
-                <div className="text-center my-4">
-                    <button className="btn btn-success" onClick={handleApprove}>
-                        Approve Algorithm
-                    </button>
-                </div>
-            )}
 
             <div className="container-fluid">
                 <div className="row">

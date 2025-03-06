@@ -37,8 +37,8 @@ export default function Others() {
                 />
               </div>
               <div className = "col-lg-8">
-                <h1 className="mb-3">Power Your Online Operations with <span className="text-purple">Tachys VPS</span></h1>
-                <p className="fs-5 fw-light">Experience lightning-fast, reliable VPS hosting for trading, development, business, and more.</p>
+                <h1 className="mb-3 text-center text-lg-start">Power Your Online Operations with <span className="text-purple">Tachys VPS</span></h1>
+                <p className="fs-5 fw-light text-center text-lg-start">Experience lightning-fast, reliable VPS hosting for trading, development, business, and more.</p>
                 <div className = "text-center">
                   <Link href= {pricing} type="button" className="btn btn-purple px-4 mx-2 mb-2">Launch VPS</Link>
                   <Link href= {market} type="button" className="btn btn-outline-purple px-4 mx-2 mb-2">Visit Algo Market</Link>

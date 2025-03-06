@@ -169,32 +169,32 @@ export default async function Market(){
                     {/* Middle Column - Main Content */}
                     <div className="col-12 col-lg-7">
                       <div className="space-y-4">
-                        <p className="text-gray-600 leading-relaxed bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg border border-gray-100 shadow-sm">
+                        <p className="text-gray-600 leading-tight tracking-tight text-justify bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg border border-gray-100 shadow-sm">
                           Welcome to the premier destination for professional trading algorithms. Our expertly curated marketplace brings together the most sophisticated automated trading bots, cutting-edge technical indicators, and proven copy trading systems. Discover why thousands of traders trust our marketplace to enhance their trading journey:
                         </p>
                         
                         <div className="flex flex-wrap justify-center gap-4 mb-3">
                           <div className="flex items-center gap-2">
                             <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
-                              <Code className="w-4 h-4 text-purple-600" />
+                              <Code className="w-6 h-6 text-purple-600" />
                             </div>
                             <span className="text-sm text-gray-700">Trading Bots</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-                              <LineChart className="w-4 h-4 text-blue-600" />
+                              <LineChart className="w-6 h-6 text-blue-600" />
                             </div>
                             <span className="text-sm text-gray-700">Indicators</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
-                              <Users className="w-4 h-4 text-green-600" />
+                              <Users className="w-6 h-6 text-green-600" />
                             </div>
                             <span className="text-sm text-gray-700">Copy Trading</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
-                              <Users className="w-4 h-4 text-orange-600" />
+                              <Users className="w-6 h-6 text-orange-600" />
                             </div>
                             <span className="text-sm text-gray-700">Signals</span>
                           </div>

@@ -91,15 +91,23 @@ export function EditAlgoForm({ algo, onSuccess, onCancel, isUnverified }: EditAl
     }
   };
 
-  const deleteOldFile = async (path: string) => {
+  const deleteOldFile = async (path: string, url: string) => {
     try {
+      if (!url) return;
+      
+      // Extract the full path from the URL
+      const urlObj = new URL(url);
+      const pathFromUrl = urlObj.pathname.startsWith('/') ? urlObj.pathname.slice(1) : urlObj.pathname;
+
+      console.log('Delete Success');
+
       const response = await fetch('/api/storage', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          path,
+          path: decodeURIComponent(pathFromUrl),
           access: 'private'
         }),
       });
@@ -152,8 +160,8 @@ export function EditAlgoForm({ algo, onSuccess, onCancel, isUnverified }: EditAl
 
       // Delete old files if they exist and new files are being uploaded
       if (files.description) {
-        if (isUnverifiedAlgo(algo) && algo.md?.path) {
-          await deleteOldFile(algo.md.path);
+        if (isUnverifiedAlgo(algo) && algo.md?.path && algo.md?.url) {
+          await deleteOldFile(algo.md.path, algo.md.url);
         }
         const descriptionFile = await uploadFile(files.description, 'md');
         newAlgoData.md = {
@@ -163,8 +171,8 @@ export function EditAlgoForm({ algo, onSuccess, onCancel, isUnverified }: EditAl
       }
 
       if (files.image) {
-        if (algo.image?.path) {
-          await deleteOldFile(algo.image.path);
+        if (algo.image?.path && algo.image?.url) {
+          await deleteOldFile(algo.image.path, algo.image.url);
         }
         const imageFile = await uploadFile(files.image, 'image');
         newAlgoData.image = {
@@ -175,7 +183,7 @@ export function EditAlgoForm({ algo, onSuccess, onCancel, isUnverified }: EditAl
 
       if (files.app) {
         if (algo.app?.path) {
-          await deleteOldFile(algo.app.path);
+          await deleteOldFile(algo.app.path, algo.app.url || '');
         }
         const appFile = await uploadFile(files.app, 'zip');
         newAlgoData.app = {
@@ -189,7 +197,9 @@ export function EditAlgoForm({ algo, onSuccess, onCancel, isUnverified }: EditAl
         if (algo.screenshots?.length) {
           await Promise.all(
             algo.screenshots.map(screenshot => 
-              screenshot.path ? deleteOldFile(screenshot.path) : Promise.resolve()
+              screenshot.path && screenshot.url ? 
+                deleteOldFile(screenshot.path, screenshot.url) : 
+                Promise.resolve()
             )
           );
         }

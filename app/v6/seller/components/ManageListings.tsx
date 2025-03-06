@@ -20,17 +20,31 @@ export function ManageListings({ approvedAlgos, unverifiedAlgos, onSuccess }: Ma
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  const deleteOldFile = async (path: string) => {
+  // Combine arrays while ensuring unique entries
+  const allAlgos = React.useMemo(() => {
+    const approvedIds = new Set(approvedAlgos.map(algo => algo.id));
+    // Filter out any unverified algos that have the same ID as an approved algo
+    const filteredUnverified = unverifiedAlgos.filter(algo => !approvedIds.has(algo.id));
+    return [...approvedAlgos, ...filteredUnverified];
+  }, [approvedAlgos, unverifiedAlgos]);
+
+  const deleteOldFile = async (path: string, url: string) => {
     try {
-      if (!path) return;
+      if (!url) return;
       
+      // Extract the full path from the URL
+      const urlObj = new URL(url);
+      const pathFromUrl = urlObj.pathname.startsWith('/') ? urlObj.pathname.slice(1) : urlObj.pathname;
+
+      console.log('Delete Success');
+
       const response = await fetch('/api/storage', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          path,
+          path: decodeURIComponent(pathFromUrl),
           access: 'private'
         }),
       });
@@ -58,26 +72,35 @@ export function ManageListings({ approvedAlgos, unverifiedAlgos, onSuccess }: Ma
       try {
         // Delete files from blob storage
         if (algo.identity === Identity.Internal) {
-          // Delete description file
-          if ('md' in algo && algo.md?.path) {
-            await deleteOldFile(algo.md.path);
+          if ('md' in algo) {
+            // For unverified algo
+            if (algo.md?.path && algo.md?.url) {
+              await deleteOldFile(algo.md.path, algo.md.url);
+            }
+          } else {
+            // For approved algo
+            if (algo.md_path && algo.md_description) {
+              await deleteOldFile(algo.md_path, algo.md_description);
+            }
           }
           
           // Delete main image
-          if (algo.image?.path) {
-            await deleteOldFile(algo.image.path);
+          if (algo.image?.path && algo.image?.url) {
+            await deleteOldFile(algo.image.path, algo.image.url);
           }
           
           // Delete app file
-          if (algo.app?.path) {
-            await deleteOldFile(algo.app.path);
+          if (algo.app?.path && algo.app?.url) {
+            await deleteOldFile(algo.app.path, algo.app.url);
           }
           
           // Delete screenshots
           if (algo.screenshots?.length) {
             await Promise.all(
               algo.screenshots.map(screenshot => 
-                screenshot.path ? deleteOldFile(screenshot.path) : Promise.resolve()
+                screenshot.path && screenshot.url ? 
+                  deleteOldFile(screenshot.path, screenshot.url) : 
+                  Promise.resolve()
               )
             );
           }
@@ -90,6 +113,7 @@ export function ManageListings({ approvedAlgos, unverifiedAlgos, onSuccess }: Ma
           await deleteDoc(doc(db, 'algos', algo.id));
         }
 
+        // Update user activities
         const userRef = doc(db, "users", algo.sellerId);
         const userDoc = await getDoc(userRef);
         const currentActivities = userDoc.data()?.activities2 || [];
@@ -119,8 +143,6 @@ export function ManageListings({ approvedAlgos, unverifiedAlgos, onSuccess }: Ma
     setShowEditForm(true);
   };
 
-  const allAlgos = [...(Array.isArray(approvedAlgos) ? approvedAlgos : []), ...(Array.isArray(unverifiedAlgos) ? unverifiedAlgos : [])];
-  
   // Pagination calculations
   const totalPages = Math.ceil(allAlgos.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -168,7 +190,7 @@ export function ManageListings({ approvedAlgos, unverifiedAlgos, onSuccess }: Ma
           <tbody>
             {currentAlgos.length > 0 ? (
               currentAlgos.map(algo => (
-                <tr key={algo.id}>
+                <tr key={`${algo.id}-${unverifiedAlgos.some(a => a.id === algo.id) ? 'unverified' : 'approved'}`}>
                   <td>{algo.name}</td>
                   <td>{new Date(algo.uploaded).toLocaleDateString()}</td>
                   <td>
