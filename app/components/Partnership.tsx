@@ -216,8 +216,8 @@ export default function Partnership() {
               />
             </div>
             <div className="col-lg-8">
-              <h2 className="text-3xl font-bold text-purple-600 mb-4">Start Earning with Tachys VPS</h2>
-              <h5 className="text-xl text-gray-700 mb-6">Turn your network into profit -- Your audience deserve the best</h5>
+              <h2 className="text-3xl font-bold text-purple-600 mb-4 text-center text-lg-start">Start Earning with Tachys VPS</h2>
+              <h5 className="text-xl text-gray-700 mb-6 text-center text-lg-start">Turn your network into profit -- Your audience deserve the best</h5>
               
               <div className="space-y-4">
                 <div className="flex items-start">

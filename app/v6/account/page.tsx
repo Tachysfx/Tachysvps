@@ -9,6 +9,8 @@ import { doc, getDoc, updateDoc, deleteDoc, arrayUnion } from "firebase/firestor
 import { db } from '../../functions/firebase'; 
 import Swal from 'sweetalert2';
 import { storageService } from '../../functions/storage';
+import PremiumMembershipModal from '../../components/PremiumMembershipModal';
+import { Role } from '../../types';
 
 const DEFAULT_PROFILE_IMAGE = "/user.png"; // or whatever default image you want to use
 
@@ -19,16 +21,41 @@ interface Activity {
   details: string;
 }
 
+// Add interface for Profile
+interface Profile {
+  name: string;
+  email: string;
+  emailVerified: boolean;
+  phone: string;
+  joinDate: string;
+  photoURL: string;
+  photoURL_path: string;
+  role: Role;
+  premiumExpiration: string | null;
+}
+
 export default function Profile() {
   // State management for form fields and status
-  const [profile, setProfile] = useState({
+  const [profile, setProfile] = useState<{
+    name: string;
+    email: string;
+    emailVerified: boolean;
+    phone: string;
+    joinDate: string;
+    photoURL: string;
+    photoURL_path: string;
+    role: Role;
+    premiumExpiration: string | null;
+  }>({
     name: "",
     email: "",
-    emailVerified: false, // By default, email is not verified
+    emailVerified: false,
     phone: "",
     joinDate: "",
     photoURL: DEFAULT_PROFILE_IMAGE,
     photoURL_path: "",
+    role: Role.Normal,
+    premiumExpiration: null
   });
 
   const [formProfile, setFormProfile] = useState({ 
@@ -47,6 +74,7 @@ export default function Profile() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
 
   // Check sessionStorage for UID and fetch user data
   useEffect(() => {
@@ -76,10 +104,8 @@ export default function Profile() {
       const userDoc = await getDoc(doc(db, "users", uid));
       if (userDoc.exists()) {
         const userData = userDoc.data();
-  
-        // Check for the presence of the 'password' field in the user document
         setIsPasswordEditable("password" in userData);
-  
+
         setProfile({
           name: userData.name || "",
           email: userData.email || "",
@@ -94,6 +120,8 @@ export default function Profile() {
             : "",
           photoURL: userData.photoURL || DEFAULT_PROFILE_IMAGE,
           photoURL_path: userData.photoURL_path || "",
+          role: userData.role || Role.Normal,
+          premiumExpiration: userData.premiumExpiration
         });
       } else {
         toast.error("User data not found.");
@@ -575,6 +603,63 @@ export default function Profile() {
                   <label className="me-2">Join Date:</label>
                   <p className="mb-0">{profile.joinDate}</p>
                 </div>
+                <div className="membership-status mb-4">
+                  <div className="p-4 rounded-lg border border-purple-100 bg-white shadow-sm">
+                    <label className="text-purple-600 text-center fs-4 mb-2 block">Membership Status</label>
+                    {profile.role === "Premium" ? (
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="px-3 py-1 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 text-white mx-auto font-semibold flex items-center">
+                            Premium Member
+                            <svg className="w-5 h-5 text-yellow-400 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                            </svg>
+                          </span>
+                        </div>
+                        {profile.premiumExpiration && (
+                          <p className="text-sm text-gray-500">
+                            Valid until {new Date(profile.premiumExpiration).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })}
+                          </p>
+                        )}
+                      </div>
+                    ) : profile.role === "Admin" ? (
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="px-3 py-1 rounded-full bg-gradient-to-r from-red-500 to-red-600 text-white mx-auto font-semibold flex items-center">
+                            Administrator
+                            <svg className="w-5 h-5 text-white ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-500 text-center">
+                          Full administrative access
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="px-3 py-1 rounded-full bg-gray-200 text-gray-700 mx-auto font-medium">
+                            Basic Account
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => setIsPremiumModalOpen(true)}
+                          className="w-full py-2 px-4 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all duration-200 shadow-sm flex items-center justify-center gap-2"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+                          </svg>
+                          Upgrade to Premium
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
                 <div className='text-center mt-2'>
                   <button type='button' onClick={handleLogOut} className='btn btn-outline-danger'>Log Out</button>
                 </div>
@@ -747,6 +832,12 @@ export default function Profile() {
           </div>
         </div>
       </div>
+
+      {/* Premium Membership Modal */}
+      <PremiumMembershipModal
+        isOpen={isPremiumModalOpen}
+        onClose={() => setIsPremiumModalOpen(false)}
+      />
     </>
   );
 }

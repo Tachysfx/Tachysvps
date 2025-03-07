@@ -419,7 +419,7 @@ export default function Others() {
             <div className="container">
               <div className="row align-items-center py-12 px-4">
                 <div className="col-lg-7 pe-lg-5">
-                  <h3 className="display-6 fw-bold text-purple mb-4">
+                  <h3 className="display-6 fw-bold text-purple mb-4 text-center text-lg-start">
                     Cloud Servers Built for Optimal Performance
                   </h3>
                   <p className="text-muted text-gray-600 mb-5">
@@ -570,7 +570,7 @@ export default function Others() {
             <div className="container">
               <div className="row align-items-center">
                 <div className="col-lg-6">
-                  <div className="pe-lg-5">
+                  <div className="pe-lg-5 text-center text-lg-start">
                     <h3 className="display-6 mb-4">
                       Every <span className="text-purple fw-bold">Forex Trader</span> needs
                       <br/><span className="text-purple fw-bold">Tachys VPS</span>
@@ -580,7 +580,7 @@ export default function Others() {
                       width={70}
                       height={5}
                       alt="Decorative heading"
-                      className="mb-4"
+                      className="mb-4 mx-auto lg:mx-0"
                     />
                     <p className="text-muted mb-5">
                       Dominate Forex trading with Tachys VPS - Lightning-fast execution, unbeatable uptime, 24/7 support and tailored solutions.

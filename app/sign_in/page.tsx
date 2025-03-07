@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 import { 
   LogIn, 
   UserPlus, 
@@ -23,13 +22,8 @@ import { toast } from 'react-toastify';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
-  signInWithRedirect,
   getRedirectResult,
   sendPasswordResetEmail,
-  browserLocalPersistence,
-  setPersistence,
-  GoogleAuthProvider,
-  GithubAuthProvider,
   signInWithPopup
 } from 'firebase/auth';
 import { auth, db, googleAuthProvider, githubAuthProvider, logAnalyticsEvent, realtimeDb } from '../functions/firebase';
@@ -198,14 +192,46 @@ export default function SignInPage() {
       // Add active status update
       await updateActiveStatus(user.uid, user.email!, user.displayName);
 
-      await handleSuccessfulAuth();
+      await Swal.fire({
+        icon: 'success',
+        title: 'Welcome back!',
+        text: 'You have successfully logged in.',
+        confirmButtonColor: '#7A49B7',
+        timer: 1500,
+        timerProgressBar: true,
+        showConfirmButton: false,
+        backdrop: `
+          rgba(122, 73, 183, 0.1)
+          left top
+          no-repeat
+        `
+      });
+
+      window.location.href = previousPath;
     } catch (err: any) {
       if (err.code === "auth/user-not-found") {
-        toast.error("No account found with this email.");
+        await Swal.fire({
+          icon: 'error',
+          title: 'Account Not Found',
+          text: 'No account exists with this email. Would you like to create one?',
+          confirmButtonText: 'Create Account',
+          confirmButtonColor: '#7A49B7',
+          showCancelButton: true,
+          cancelButtonText: 'Try Again'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            setFormType('signup');
+          }
+        });
       } else if (err.code === "auth/wrong-password") {
         toast.error("Incorrect password. Please try again.");
       } else {
-        toast.error("Failed to log in. Please try again.");
+        await Swal.fire({
+          icon: 'error',
+          title: 'Login Failed',
+          text: 'An error occurred during login. Please try again.',
+          confirmButtonColor: '#7A49B7'
+        });
       }
     } finally {
       setIsLoading(false);
@@ -218,7 +244,12 @@ export default function SignInPage() {
 
     try {
       if (password.length < 6) {
-        toast.error("Password must be at least 6 characters long");
+        await Swal.fire({
+          icon: 'warning',
+          title: 'Weak Password',
+          text: 'Password must be at least 6 characters long',
+          confirmButtonColor: '#7A49B7'
+        });
         return;
       }
 
@@ -263,7 +294,7 @@ export default function SignInPage() {
         body: JSON.stringify({
           template: 'WELCOME',
           data: {
-            name: email.split('@')[0], // or user.displayName if available
+            name: email.split('@')[0],
             email: email
           },
         }),
@@ -271,25 +302,46 @@ export default function SignInPage() {
 
       await Swal.fire({
         icon: 'success',
-        title: 'Welcome!',
-        text: 'Your account has been created successfully.',
+        title: 'Welcome to Tachys VPS!',
+        html: `
+          Your account has been created successfully.<br>
+          We've sent a welcome email to:<br>
+          <strong>${email}</strong>
+        `,
         confirmButtonColor: '#7A49B7',
-        timer: 1500,
+        timer: 2000,
         timerProgressBar: true,
-        showConfirmButton: false
+        showConfirmButton: false,
+        backdrop: `
+          rgba(122, 73, 183, 0.1)
+          left top
+          no-repeat
+        `
       });
 
       window.location.href = previousPath;
     } catch (err: any) {
       if (err.code === "auth/email-already-in-use") {
-        toast.error("This email is already registered. Please try logging in instead.");
-      } else if (err.code === "auth/invalid-email") {
-        toast.error("Please enter a valid email address.");
-      } else if (err.code === "auth/weak-password") {
-        toast.error("Password is too weak. Please use at least 6 characters.");
+        await Swal.fire({
+          icon: 'warning',
+          title: 'Account Exists',
+          text: 'This email is already registered. Would you like to sign in instead?',
+          confirmButtonText: 'Sign In',
+          confirmButtonColor: '#7A49B7',
+          showCancelButton: true,
+          cancelButtonText: 'Try Different Email'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            setFormType('login');
+          }
+        });
       } else {
-        toast.error("Failed to create account. Please try again.");
-        console.error("Error during signup:", err);
+        await Swal.fire({
+          icon: 'error',
+          title: 'Sign Up Failed',
+          text: 'An error occurred while creating your account. Please try again.',
+          confirmButtonColor: '#7A49B7'
+        });
       }
     } finally {
       setIsLoading(false);
@@ -305,21 +357,41 @@ export default function SignInPage() {
       
       await Swal.fire({
         icon: 'success',
-        title: 'Email Sent!',
-        text: 'Please check your inbox for password reset instructions.',
-        confirmButtonColor: '#7A49B7'
+        title: 'Reset Email Sent!',
+        html: `
+          We've sent password reset instructions to:<br>
+          <strong>${email}</strong><br><br>
+          Please check your inbox and spam folder.
+        `,
+        confirmButtonColor: '#7A49B7',
+        confirmButtonText: 'Return to Login',
+        showCancelButton: false
       });
 
       setFormType('login');
       setEmail('');
     } catch (err: any) {
       if (err.code === "auth/user-not-found") {
-        toast.error("No account found with this email.");
-      } else if (err.code === "auth/invalid-email") {
-        toast.error("Please enter a valid email address.");
+        await Swal.fire({
+          icon: 'error',
+          title: 'Account Not Found',
+          text: 'No account exists with this email. Would you like to create one?',
+          confirmButtonText: 'Create Account',
+          confirmButtonColor: '#7A49B7',
+          showCancelButton: true,
+          cancelButtonText: 'Try Again'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            setFormType('signup');
+          }
+        });
       } else {
-        toast.error("Failed to send reset email. Please try again.");
-        console.error("Error in password reset:", err);
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to send reset email. Please try again.',
+          confirmButtonColor: '#7A49B7'
+        });
       }
     } finally {
       setIsLoading(false);

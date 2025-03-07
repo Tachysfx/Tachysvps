@@ -69,7 +69,7 @@ const AuthHandler = () => {
         
         if (user.role === Role.Normal && !isSignInPage) {
           if (!isPremiumModalOpen) {
-            premiumTimer = setTimeout(() => setIsPremiumModalOpen(true), 300000);
+            premiumTimer = setTimeout(() => setIsPremiumModalOpen(true), 60000);
           }
         }
       }

@@ -149,6 +149,32 @@ export async function POST(request: Request) {
               paymentId: paymentData.data.id,
               paidAt: new Date().toISOString()
             });
+
+            // Send success email
+            await fetch('/api/contact', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                template: 'VPS_PAYMENT_SUCCESS',
+                data: {
+                  name: body.metadata.userName || 'Valued Customer',
+                  email: body.customerEmail,
+                  vpsDetails: {
+                    plan: body.metadata.planType,
+                    quantity: body.metadata.quantity,
+                    duration: body.metadata.duration,
+                    region: body.metadata.region,
+                    price: body.amount,
+                    serverCredentials: {
+                      username: 'Administrator',
+                      password: body.metadata.serverCredentials?.password
+                    }
+                  }
+                }
+              })
+            });
             break;
 
           case 'algo':
@@ -162,6 +188,25 @@ export async function POST(request: Request) {
             break;
 
           case 'membership':
+            // Send success email
+            await fetch('/api/contact', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                template: 'PREMIUM_PAYMENT_SUCCESS',
+                data: {
+                  name: body.metadata.userName || 'Valued Customer',
+                  email: body.customerEmail,
+                  plan: {
+                    months: body.metadata.membershipDuration,
+                    price: body.amount
+                  }
+                }
+              })
+            });
+
             await updateDoc(doc(db, 'users', body.customerEmail), {
               role: 'Premium',
               premiumExpiration: body.metadata.membershipExpiry,
@@ -181,6 +226,70 @@ export async function POST(request: Request) {
               paidAt: new Date().toISOString()
             });
             break;
+        }
+      } else {
+        // Handle payment failure
+        if (body.metadata?.type === 'membership') {
+          // Send failure email
+          await fetch('/api/contact', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              template: 'PREMIUM_PAYMENT_FAILED',
+              data: {
+                name: body.metadata.userName || 'Valued Customer',
+                email: body.customerEmail,
+                plan: {
+                  months: body.metadata.membershipDuration,
+                  price: body.amount
+                },
+                error: paymentData.message || 'Payment could not be processed'
+              }
+            })
+          });
+
+          // Update membership status to failed
+          if (body.metadata.membershipId) {
+            await updateDoc(doc(db, 'memberships', body.metadata.membershipId), {
+              status: 'failed',
+              error: paymentData.message || 'Payment failed',
+              failedAt: new Date().toISOString()
+            });
+          }
+        } else if (body.metadata?.type === 'vps') {
+          // Send failure email
+          await fetch('/api/contact', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              template: 'VPS_PAYMENT_FAILED',
+              data: {
+                name: body.metadata.userName || 'Valued Customer',
+                email: body.customerEmail,
+                vpsDetails: {
+                  plan: body.metadata.planType,
+                  quantity: body.metadata.quantity,
+                  duration: body.metadata.duration,
+                  region: body.metadata.region,
+                  price: body.amount
+                },
+                error: paymentData.message || 'Payment could not be processed'
+              }
+            })
+          });
+
+          // Update order status to failed
+          if (body.metadata.vpsOrderId) {
+            await updateDoc(doc(db, 'orders', body.metadata.vpsOrderId), {
+              paymentStatus: 'failed',
+              error: paymentData.message || 'Payment failed',
+              failedAt: new Date().toISOString()
+            });
+          }
         }
       }
 
