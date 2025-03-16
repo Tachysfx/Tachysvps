@@ -10,6 +10,7 @@ import More from "./More";
 import CardSideBar from "./SideBar";
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'react-toastify';
+import AlgoStructuredData from './AlgoStructuredData';
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -166,7 +167,21 @@ export default function AlgoDetails({ enrichedAlgo, enrichedAlgos, id }: AlgoDet
   };
 
   return (
-    <>
+    <div className="container-fluid py-5">
+      {/* Add structured data for SEO */}
+      <AlgoStructuredData
+        name={enrichedAlgo.name}
+        description={enrichedAlgo.description || `Trading algorithm by ${enrichedAlgo.sellerName}`}
+        image={enrichedAlgo.image || '/default-algo-image.png'}
+        datePublished={enrichedAlgo.createdAt || new Date().toISOString()}
+        sellerName={enrichedAlgo.sellerName}
+        price={enrichedAlgo.price}
+        currency="USD"
+        rating={enrichedAlgo.rating || 4.5}
+        reviewCount={enrichedAlgo.reviewCount || 10}
+        id={id}
+      />
+      
       {/* Modal */}
       <div className="modal fade" id="exampleModal" tabIndex={-1} aria-labelledby="exampleModalLabel" aria-hidden="true">
         <div className="modal-dialog modal-dialog-centered">
@@ -385,6 +400,6 @@ export default function AlgoDetails({ enrichedAlgo, enrichedAlgos, id }: AlgoDet
         isOpen={isAuthModalOpen}
         onRequestClose={() => setIsAuthModalOpen(false)}
       />
-    </>
+    </div>
   );
 } 

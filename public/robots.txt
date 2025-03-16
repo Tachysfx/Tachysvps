@@ -1,0 +1,22 @@
+# robots.txt for tachysvps.com
+User-agent: *
+Allow: /$
+Allow: /sitemap.xml$
+Allow: /api/sitemap$
+Allow: /market/*$
+
+# Disallow indexing of specific pages that shouldn't appear as separate search results
+Disallow: /v6/*$
+
+# Allow crawling of CSS, JS, and images
+Allow: /*.css$
+Allow: /*.js$
+Allow: /*.jpg$
+Allow: /*.jpeg$
+Allow: /*.png$
+Allow: /*.gif$
+Allow: /*.svg$
+
+# Sitemap locations
+Sitemap: https://tachysvps.com/sitemap.xml
+Sitemap: https://tachysvps.com/api/sitemap 

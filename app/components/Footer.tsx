@@ -62,7 +62,7 @@ export default function Footer() {
                         </form>
                         <div>
                             <h5 className='fw-bold mb-3'>Contact Us</h5>
-                            <p className="text-light opacity-75">***, Northern Ireland, UK <br />
+                            <p className="text-light opacity-75">16 Lateef Onatade Street, Davour, Sango Ota, Ogun State, Nigeria <br />
                             <Link className='text-light text-decoration-none hover:text-purple' href="mailto:support@tachysvps.com">support@tachysvps.com</Link></p>
                         </div>
                     </div>
