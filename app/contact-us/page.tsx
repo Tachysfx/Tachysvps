@@ -32,7 +32,7 @@ export default function ContactPage() {
             {
               icon: Phone,
               title: "Call Us",
-              content: "+44 2890 ***",
+              content: "+234 813 231 1629",
               action: "Call now",
               link: "tel:+442890***",
               color: "bg-emerald-500"
