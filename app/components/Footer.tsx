@@ -6,7 +6,10 @@ import {
   Facebook,
   Twitter,
   Compass,
-  MessageCircle // for WhatsApp
+  MessageCircle, // for WhatsApp
+  Scale, // for legal section
+  Shield, // for privacy
+  CreditCard // for refund
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -50,7 +53,31 @@ export default function Footer() {
                         </ul>
                     </div>
 
-                    <div className="col-md-5 offset-md-1 mb-4">
+                    <div className="col-6 col-md-2 mb-4">
+                        <h5 className='fw-bold mb-3'>Legal</h5>
+                        <ul className="nav flex-column">
+                            <li className="nav-item mb-2">
+                                <Link href="/terms&conditions" className="nav-link text-light p-0 opacity-75 hover:opacity-100 d-flex align-items-center">
+                                    <Scale className="w-4 h-4 me-2" />
+                                    Terms & Conditions
+                                </Link>
+                            </li>
+                            <li className="nav-item mb-2">
+                                <Link href="/privacy" className="nav-link text-light p-0 opacity-75 hover:opacity-100 d-flex align-items-center">
+                                    <Shield className="w-4 h-4 me-2" />
+                                    Privacy Policy
+                                </Link>
+                            </li>
+                            <li className="nav-item mb-2">
+                                <Link href="/refund" className="nav-link text-light p-0 opacity-75 hover:opacity-100 d-flex align-items-center">
+                                    <CreditCard className="w-4 h-4 me-2" />
+                                    Refund Policy
+                                </Link>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div className="col-md-4 mb-4">
                         <form className="mb-4">
                             <h5 className='fw-bold mb-3'>Subscribe to our newsletter</h5>
                             <p className="text-light opacity-75">Get monthly exciting offers from us.</p>
@@ -62,7 +89,7 @@ export default function Footer() {
                         </form>
                         <div>
                             <h5 className='fw-bold mb-3'>Contact Us</h5>
-                            <p className="text-light opacity-75">16 Lateef Onatade Street, Davour, Sango Ota, Ogun State, Nigeria <br />
+                            <p className="text-light opacity-75">16 Lateef Onatade Street, Ota, Ogun State, Nigeria <br />
                             <Link className='text-light text-decoration-none hover:text-purple' href="mailto:support@tachysvps.com">support@tachysvps.com</Link></p>
                         </div>
                     </div>
@@ -79,7 +106,7 @@ export default function Footer() {
                                 className="d-block"
                             />
                         </Link>
-                        <span className="text-light opacity-75">&copy; 2024 Tachys VPS, Inc</span>
+                        <span className="text-light opacity-75">&copy; 2025 Tachys VPS, Inc</span>
                     </div>
                     <ul className="nav col-md-4 justify-content-end list-unstyled d-flex">
                         <li className="ms-3"><Link href="" className="text-light opacity-75 hover:opacity-100"><Facebook size={24} /></Link></li>
