@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+  <div style="font-family: 'Inter', 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
+    <div style="text-align: center; margin-bottom: 20px;">
+      <img src="https://tachysvps.com/logo.png" alt="Tachys VPS Logo" width="60" height="60" style="margin: 0 auto; border-radius: 12px; object-fit: cover;">
+    </div>
+
+    <div style="background: #FEF2F2; border-radius: 16px; padding: 35px; color: #991B1B; text-align: center; margin-bottom: 40px;">
+      <h1 style="font-size: 28px; margin: 0 0 15px 0; font-weight: 700;">
+        Payment Failed
+      </h1>
+      <p style="font-size: 18px; margin: 0; opacity: 0.9;">
+        We couldn't process your VPS order payment
+      </p>
+    </div>
+
+    <div style="margin: 30px 0;">
+      <p style="font-size: 16px; line-height: 1.6; color: #2D3748;">Dear ${data.name},</p>
+      
+      <p style="font-size: 16px; line-height: 1.6; color: #2D3748;">
+        We're sorry, but we couldn't process your payment of $${data.vpsDetails.price} for your VPS order.
+        ${data.error ? `<br><br>Error: ${data.error}` : ''}
+      </p>
+
+      <div style="background: #F9F5FF; border: 1px solid #E9D8FD; border-radius: 16px; padding: 30px; margin: 35px 0;">
+        <h3 style="color: #7A49B7; margin: 0 0 20px 0; font-size: 20px;">🖥️ Order Details</h3>
+        <ul style="list-style-type: none; padding: 0; margin: 0;">
+          <li style="margin: 12px 0; color: #4A5568; display: flex; justify-content: space-between;">
+            <span>Plan:</span>
+            <strong>${data.vpsDetails.plan}</strong>
+          </li>
+          <li style="margin: 12px 0; color: #4A5568; display: flex; justify-content: space-between;">
+            <span>Quantity:</span>
+            <strong>${data.vpsDetails.quantity} Server${data.vpsDetails.quantity > 1 ? 's' : ''}</strong>
+          </li>
+          <li style="margin: 12px 0; color: #4A5568; display: flex; justify-content: space-between;">
+            <span>Duration:</span>
+            <strong>${data.vpsDetails.duration}</strong>
+          </li>
+          <li style="margin: 12px 0; color: #4A5568; display: flex; justify-content: space-between;">
+            <span>Region:</span>
+            <strong>${data.vpsDetails.region}</strong>
+          </li>
+        </ul>
+      </div>
+
+      <div style="background: #F9F5FF; border: 1px solid #E9D8FD; border-radius: 16px; padding: 30px; margin: 35px 0;">
+        <h3 style="color: #7A49B7; margin: 0 0 20px 0; font-size: 20px;">What to do next?</h3>
+        <ul style="list-style-type: none; padding: 0; margin: 0;">
+          <li style="margin: 12px 0; color: #4A5568; display: flex; align-items: center;">
+            <span style="color: #7A49B7; margin-right: 10px;">1.</span> Check your payment method details
+          </li>
+          <li style="margin: 12px 0; color: #4A5568; display: flex; align-items: center;">
+            <span style="color: #7A49B7; margin-right: 10px;">2.</span> Ensure sufficient funds are available
+          </li>
+          <li style="margin: 12px 0; color: #4A5568; display: flex; align-items: center;">
+            <span style="color: #7A49B7; margin-right: 10px;">3.</span> Try again or use a different payment method
+          </li>
+        </ul>
+      </div>
+
+      <div style="text-align: center; margin: 35px 0;">
+        <a href="https://tachysvps.com/v6/dashboard/vps" 
+          style="display: inline-block; background: #7A49B7; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; transition: all 0.3s ease;">
+          Try Again
+        </a>
+      </div>
+
+      <p style="font-size: 16px; line-height: 1.6; color: #2D3748;">
+        If you continue to experience issues or need assistance, please don't hesitate to contact our support team.
+      </p>
+
+      <p style="margin-top: 35px; color: #2D3748;">
+        Best regards,<br>
+        <strong style="color: #7A49B7;">The Tachys VPS Team</strong>
+      </p>
+    </div>
+
+    <div style="margin-top: 40px; padding-top: 30px; border-top: 1px solid #E2E8F0; text-align: center;">
+      <p style="color: #718096; font-size: 14px;">
+        For support: <a href="mailto:support@tachysvps.com" style="color: #7A49B7; text-decoration: none;">support@tachysvps.com</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>
