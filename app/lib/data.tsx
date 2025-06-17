@@ -14,6 +14,7 @@ export interface EnrichedAlgo {
   buy_price: number;
   type: string;
   sellerName: string;
+  sellerId: string;
   uploaded: string;
   updated: string;
   version: string;
@@ -47,6 +48,7 @@ export async function fetchEnrichedAlgo(id: string): Promise<EnrichedAlgo> {
       buy_price: algoData.buy_price,
       type: algoData.type,
       sellerName: algoData.sellerName,
+      sellerId: algoData.sellerId,
       uploaded: algoData.uploaded,
       updated: algoData.updated,
       version: algoData.version,
@@ -82,6 +84,7 @@ export async function MarketFrontData(): Promise<EnrichedAlgo[]> {
         buy_price: data.buy_price,
         type: data.type,
         sellerName: data.sellerName,
+        sellerId: data.sellerId,
         uploaded: data.uploaded,
         updated: data.updated,
         version: data.version,

@@ -7,6 +7,7 @@ interface AlgoStructuredDataProps {
   image: string;
   datePublished: string;
   sellerName: string;
+  sellerId: string;
   price?: number;
   currency?: string;
   rating?: number;
@@ -20,6 +21,7 @@ const AlgoStructuredData: React.FC<AlgoStructuredDataProps> = ({
   image,
   datePublished,
   sellerName,
+  sellerId,
   price,
   currency = 'USD',
   rating,
@@ -44,6 +46,7 @@ const AlgoStructuredData: React.FC<AlgoStructuredDataProps> = ({
     } : undefined,
     author: {
       '@type': 'Person',
+      id: sellerId,
       name: sellerName
     },
     aggregateRating: rating && reviewCount ? {

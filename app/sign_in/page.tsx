@@ -7,8 +7,6 @@ import {
   UserPlus, 
   KeyRound, 
   ArrowRight, 
-  Mail, 
-  Lock,
   Github,
   AlertCircle,
   MessageSquare,
@@ -272,7 +270,8 @@ export default function SignInPage() {
         createdAt: new Date().toISOString(),
         location: location,
         activities1: [signUpActivity],
-        role: Role.Normal
+        role: Role.Normal,
+        premiumExpiryDate: ""
       });
 
       sessionStorage.setItem(
@@ -437,6 +436,7 @@ export default function SignInPage() {
               location: location,
               activities1: [signUpActivity],
               role: Role.Normal,
+              premiumExpiryDate: "",
               lastLogin: new Date().toISOString()
             });
           } else {
@@ -526,6 +526,7 @@ export default function SignInPage() {
           lastLogin: lastLogin,
           location: location,
           activities1: [signUpActivity],
+          premiumExpiryDate: "",
           role: Role.Normal // Set default role for new users
         });
 
@@ -624,6 +625,7 @@ export default function SignInPage() {
           lastLogin: lastLogin,
           location: location,
           activities1: [signUpActivity],
+          premiumExpiryDate: "",
           role: Role.Normal // Set default role for new users
         });
 

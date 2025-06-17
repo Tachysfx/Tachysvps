@@ -11,20 +11,18 @@ export default function PremiumExpiryChecker() {
       const userSession = sessionStorage.getItem('user');
       if (userSession) {
         const userData = JSON.parse(userSession);
-        if (userData.role === 'Premium' && userData.premiumExpiration) {
-          const expiryDate = new Date(userData.premiumExpiration);
+        if (userData.role === 'Premium' && userData.premiumExpiryDate) {
+          const expiryDate = new Date(userData.premiumExpiryDate);
           if (expiryDate < new Date()) {
             // Update Firestore
-            const userRef = doc(db, 'users', userData.email);
+            const userRef = doc(db, 'users', userData.uid);
             updateDoc(userRef, {
               role: 'Normal',
-              premiumExpiration: null,
-              membershipId: null
+              premiumExpiryDate: null
             }).then(() => {
               // Update session storage
               userData.role = 'Normal';
-              delete userData.premiumExpiration;
-              delete userData.membershipId;
+              delete userData.premiumExpiryDate;
               sessionStorage.setItem('user', JSON.stringify(userData));
               
               // Notify user

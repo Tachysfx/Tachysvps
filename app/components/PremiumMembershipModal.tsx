@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { auth, db } from '../functions/firebase';
 import { Crown, Infinity, Newspaper, Rocket, X, Check } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, setDoc, arrayUnion } from 'firebase/firestore';
 import { MembershipDuration } from '../types';
+import FlutterwavePayment from './FlutterwavePayment';
+import { useFlutterwave } from 'flutterwave-react-v3';
 
 interface PremiumMembershipModalProps {
   isOpen: boolean;
@@ -29,41 +31,69 @@ export default function PremiumMembershipModal({ isOpen, onClose }: PremiumMembe
       }
 
       const userData = JSON.parse(userSession);
-      const membershipId = crypto.randomUUID();
       const expiryDate = new Date();
       expiryDate.setMonth(expiryDate.getMonth() + selectedDuration.months);
 
-      const response = await fetch('/api/payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      // Initialize Flutterwave payment
+      const config = {
+        public_key: process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY!,
+        tx_ref: crypto.randomUUID(),
+        amount: selectedDuration.price,
+        currency: "USD",
+        payment_options: "card,banktransfer",
+        customer: {
+          email: userData.email,
+          name: userData.name || userData.email,
+          phone_number: userData.phone || "+2340000000000",
         },
-        body: JSON.stringify({
-          amount: selectedDuration.price,
-          type: 'payment',
-          description: `Premium Membership - ${selectedDuration.months} Month${selectedDuration.months > 1 ? 's' : ''}`,
-          customerEmail: userData.email,
-          metadata: {
-            membershipId,
-            membershipDuration: selectedDuration.months,
-            membershipExpiry: expiryDate.toISOString()
+        customizations: {
+          title: "Premium Membership",
+          description: `${selectedDuration.months} Month Premium Membership`,
+          logo: `${process.env.NEXT_PUBLIC_APP_URL}/logo.png`,
+        }
+      };
+
+      const handleFlutterPayment = useFlutterwave(config);
+      await handleFlutterPayment({
+        callback: async (response) => {
+          if (response.status === 'successful') {
+            try {
+              // Update user role and expiry date in Firestore using UID
+              const userRef = doc(db, 'users', userData.uid);
+              await updateDoc(userRef, {
+                role: 'Premium',
+                premiumExpiryDate: expiryDate.toISOString()
+              });
+
+              // Update session storage
+              userData.role = 'Premium';
+              userData.premiumExpiryDate = expiryDate.toISOString();
+              sessionStorage.setItem('user', JSON.stringify(userData));
+
+              // Set a flag to indicate successful payment
+              sessionStorage.setItem('payment_success', 'true');
+
+              // Close modal and show success message
+              onClose();
+              toast.success('Premium membership activated successfully!');
+              window.location.reload();
+            } catch (error) {
+              console.error('Error updating user:', error);
+              toast.error('Payment successful but failed to update account. Please contact support.');
+            }
           }
-        }),
+        },
+        onClose: () => {
+          // Only show cancelled message if payment wasn't successful
+          const paymentSuccess = sessionStorage.getItem('payment_success');
+          if (!paymentSuccess) {
+            onClose();
+            toast.info('Payment cancelled');
+          }
+          // Clear the payment success flag
+          sessionStorage.removeItem('payment_success');
+        },
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to create payment');
-      }
-
-      const { paymentUrl } = await response.json();
-
-      // Update session storage with premium status
-      userData.role = 'Premium';
-      userData.premiumExpiration = expiryDate.toISOString();
-      userData.membershipId = membershipId;
-      sessionStorage.setItem('user', JSON.stringify(userData));
-
-      window.location.href = paymentUrl;
     } catch (error) {
       console.error('Payment error:', error);
       toast.error('Failed to process payment. Please try again.');

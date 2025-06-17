@@ -5,46 +5,109 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckCircle, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import Link from 'next/link';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../../functions/firebase';
 
 export default function PaymentSuccess() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isProcessing, setIsProcessing] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [orderDetails, setOrderDetails] = useState<any>(null);
 
   useEffect(() => {
-    const updateOrderStatus = async () => {
+    const verifyPayment = async () => {
       try {
-        const paymentId = searchParams.get('payment_id');
         const orderId = searchParams.get('order_id');
+        const transactionId = searchParams.get('transaction_id');
         const returnPath = searchParams.get('return_to') || '/v6/dashboard';
 
-        if (!paymentId || !orderId) {
-          setError('Missing payment information');
+        if (!orderId) {
+          setError('Missing order information');
           return;
         }
 
-        // Wait for webhook to process (retry a few times)
-        let retries = 0;
-        while (retries < 3) {
-          const response = await fetch(`/api/orders/${orderId}`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-          });
+        // Get order details from Firestore
+        const orderRef = doc(db, 'orders', orderId);
+        const orderDoc = await getDoc(orderRef);
 
-          const order = await response.json();
-          if (order.paymentStatus === 'completed') {
-            setIsProcessing(false);
-            // Auto-redirect after 3 seconds
-            setTimeout(() => router.push(returnPath), 3000);
-            return;
-          }
-
-          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2s before retry
-          retries++;
+        if (!orderDoc.exists()) {
+          setError('Order not found');
+          return;
         }
 
-        setError('Payment verification taking longer than expected');
+        const orderData = orderDoc.data();
+        setOrderDetails(orderData);
+
+        // Check payment status
+        if (orderData.paymentStatus === 'completed') {
+          setIsProcessing(false);
+          
+          // Handle different payment types
+          const userSession = sessionStorage.getItem('user');
+          if (userSession) {
+            const userData = JSON.parse(userSession);
+
+            switch (orderData.type) {
+              case 'algorithm':
+                // Handle algorithm purchase
+                if (!userData.downloads) {
+                  userData.downloads = [];
+                }
+                userData.downloads.push(orderData.metadata.algoId);
+                break;
+
+              case 'membership':
+                // Handle membership purchase
+                userData.role = 'Premium';
+                userData.premiumExpiryDate = orderData.membershipExpiry;
+                break;
+
+              case 'vps':
+                // Handle VPS plan purchase
+                if (!userData.vpsPlans) {
+                  userData.vpsPlans = [];
+                }
+                userData.vpsPlans.push({
+                  planId: orderData.metadata.planId,
+                  expiryDate: orderData.vpsExpiry,
+                  status: 'active',
+                  ...orderData.metadata
+                });
+                break;
+            }
+
+            // Update session storage with new user data
+            sessionStorage.setItem('user', JSON.stringify(userData));
+          }
+          
+          // Redirect after a short delay
+          setTimeout(() => {
+          router.push(returnPath);
+          }, 2000);
+        } else {
+          // Wait for webhook to process (retry a few times)
+          let retries = 0;
+          const maxRetries = 3;
+          const retryDelay = 2000;
+
+          while (retries < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+            
+            const updatedOrderDoc = await getDoc(orderRef);
+            const updatedOrderData = updatedOrderDoc.data();
+
+            if (updatedOrderData?.paymentStatus === 'completed') {
+              setIsProcessing(false);
+              router.push(returnPath);
+              return;
+            }
+
+            retries++;
+          }
+
+          setError('Payment verification taking longer than expected');
+        }
       } catch (error) {
         console.error('Error verifying payment:', error);
         setError('Failed to verify payment status');
@@ -53,7 +116,7 @@ export default function PaymentSuccess() {
       }
     };
 
-    updateOrderStatus();
+    verifyPayment();
   }, [router, searchParams]);
 
   return (
@@ -93,6 +156,14 @@ export default function PaymentSuccess() {
             <h1 className="text-2xl font-bold text-gray-800 mb-4">
               Payment Successful!
             </h1>
+            {orderDetails && (
+              <div className="mb-8 text-left bg-gray-50 p-4 rounded-lg">
+                <h2 className="font-semibold text-gray-800 mb-2">Order Details:</h2>
+                <p className="text-gray-600">Order ID: {orderDetails.id}</p>
+                <p className="text-gray-600">Amount: ${orderDetails.price}</p>
+                <p className="text-gray-600">Status: {orderDetails.paymentStatus}</p>
+              </div>
+            )}
             <p className="text-gray-600 mb-8">
               Thank you for your payment. Your order has been processed successfully.
               Redirecting you shortly...

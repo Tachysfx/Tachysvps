@@ -13,6 +13,7 @@ interface PaymentRequest {
   description: string;
   orderId?: string;
   customerEmail?: string;
+  customerName?: string;
   payeeEmail?: string;
   type: 'payment' | 'withdrawal';
   bankCode?: string;
@@ -50,6 +51,13 @@ interface PaymentRequest {
 
 export async function POST(request: Request) {
   try {
+    if (!process.env.NEXT_PUBLIC_APP_URL) {
+      return NextResponse.json(
+        { error: 'Application URL not configured' },
+        { status: 500 }
+      );
+    }
+
     const body: PaymentRequest = await request.json();
     
     if (!FLUTTERWAVE_SECRET_KEY) {
@@ -70,19 +78,7 @@ export async function POST(request: Request) {
           break;
 
         case 'algo':
-          // Update algo payment status
-          if (body.metadata.algoId) {
-            const algoRef = doc(db, 'algos', body.metadata.algoId);
-            await updateDoc(algoRef, {
-              paid: true,
-              lastPurchased: new Date().toISOString(),
-              purchaseHistory: arrayUnion({
-                userId: body.customerEmail,
-                purchaseDate: new Date().toISOString(),
-                amount: body.amount
-              })
-            });
-          }
+          // No pre-payment updates needed for algo
           break;
 
         case 'membership':
@@ -104,33 +100,40 @@ export async function POST(request: Request) {
           break;
       }
 
+      // Get the correct return URL based on payment type
+      const returnUrl = getReturnUrl(body.metadata);
+
       // Create Flutterwave payment
+      const flutterwaveData = {
+        tx_ref: body.orderId,
+        amount: body.amount,
+        currency: body.currency || 'USD',
+        payment_options: 'card',
+        redirect_url: `${returnUrl}`,
+        customer: {
+          email: body.customerEmail,
+          name: body.customerName || body.metadata?.userName,
+        },
+        customizations: {
+          title: body.metadata?.type === 'algo' ? 'Algorithm Purchase' : 'Payment',
+          description: body.metadata?.type === 'algo' 
+            ? `Purchase of ${body.metadata?.algoName} algorithm`
+            : body.description,
+          logo: process.env.NEXT_PUBLIC_APP_URL + '/logo.png'
+        },
+        meta: {
+          ...body.metadata,
+          returnUrl
+        }
+      };
+
       const paymentResponse = await fetch(`${FLUTTERWAVE_API_URL}/payments`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${FLUTTERWAVE_SECRET_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          tx_ref: body.orderId || crypto.randomUUID(),
-          amount: body.amount,
-          currency: body.currency || 'USD',
-          payment_options: 'card,banktransfer',
-          redirect_url: `${process.env.NEXT_PUBLIC_APP_URL}/v6/payment/success`,
-          customer: {
-            email: body.customerEmail,
-            name: body.metadata?.userName,
-          },
-          customizations: {
-            title: 'Payment for ' + body.description,
-            description: body.description,
-            logo: process.env.NEXT_PUBLIC_APP_URL + '/logo.png'
-          },
-          meta: {
-            ...body.metadata,
-            returnUrl: getReturnUrl(body.metadata)
-          }
-        }),
+        body: JSON.stringify(flutterwaveData),
       });
 
       if (!paymentResponse.ok) {
@@ -140,195 +143,11 @@ export async function POST(request: Request) {
 
       const paymentData = await paymentResponse.json();
 
-      // Post-payment success updates
-      if (paymentData.status === 'success') {
-        switch(body.metadata?.type) {
-          case 'vps':
-            await updateDoc(doc(db, 'orders', body.metadata.vpsOrderId!), {
-              paymentStatus: 'completed',
-              paymentId: paymentData.data.id,
-              paidAt: new Date().toISOString()
-            });
-
-            // Send success email
-            await fetch('/api/contact', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                template: 'VPS_PAYMENT_SUCCESS',
-                data: {
-                  name: body.metadata.userName || 'Valued Customer',
-                  email: body.customerEmail,
-                  vpsDetails: {
-                    plan: body.metadata.planType,
-                    quantity: body.metadata.quantity,
-                    duration: body.metadata.duration,
-                    region: body.metadata.region,
-                    price: body.amount,
-                    serverCredentials: {
-                      username: 'Administrator',
-                      password: body.metadata.serverCredentials?.password
-                    }
-                  }
-                }
-              })
-            });
-            break;
-
-          case 'algo':
-            await updateDoc(doc(db, 'users', body.customerEmail), {
-              purchasedAlgos: arrayUnion({
-                algoId: body.metadata.algoId,
-                purchaseDate: new Date().toISOString(),
-                amount: body.amount
-              })
-            });
-            break;
-
-          case 'membership':
-            // Send success email
-            await fetch('/api/contact', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                template: 'PREMIUM_PAYMENT_SUCCESS',
-                data: {
-                  name: body.metadata.userName || 'Valued Customer',
-                  email: body.customerEmail,
-                  plan: {
-                    months: body.metadata.membershipDuration,
-                    price: body.amount
-                  }
-                }
-              })
-            });
-
-            await updateDoc(doc(db, 'users', body.customerEmail), {
-              role: 'Premium',
-              premiumExpiration: body.metadata.membershipExpiry,
-              membershipId: body.metadata.membershipId,
-              membershipHistory: arrayUnion({
-                membershipId: body.metadata.membershipId,
-                startDate: new Date().toISOString(),
-                expiryDate: body.metadata.membershipExpiry,
-                duration: body.metadata.membershipDuration,
-                amount: body.amount
-              })
-            });
-
-            await updateDoc(doc(db, 'memberships', body.metadata.membershipId!), {
-              status: 'active',
-              paymentId: paymentData.data.id,
-              paidAt: new Date().toISOString()
-            });
-            break;
-        }
-      } else {
-        // Handle payment failure
-        if (body.metadata?.type === 'membership') {
-          // Send failure email
-          await fetch('/api/contact', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              template: 'PREMIUM_PAYMENT_FAILED',
-              data: {
-                name: body.metadata.userName || 'Valued Customer',
-                email: body.customerEmail,
-                plan: {
-                  months: body.metadata.membershipDuration,
-                  price: body.amount
-                },
-                error: paymentData.message || 'Payment could not be processed'
-              }
-            })
-          });
-
-          // Update membership status to failed
-          if (body.metadata.membershipId) {
-            await updateDoc(doc(db, 'memberships', body.metadata.membershipId), {
-              status: 'failed',
-              error: paymentData.message || 'Payment failed',
-              failedAt: new Date().toISOString()
-            });
-          }
-        } else if (body.metadata?.type === 'vps') {
-          // Send failure email
-          await fetch('/api/contact', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              template: 'VPS_PAYMENT_FAILED',
-              data: {
-                name: body.metadata.userName || 'Valued Customer',
-                email: body.customerEmail,
-                vpsDetails: {
-                  plan: body.metadata.planType,
-                  quantity: body.metadata.quantity,
-                  duration: body.metadata.duration,
-                  region: body.metadata.region,
-                  price: body.amount
-                },
-                error: paymentData.message || 'Payment could not be processed'
-              }
-            })
-          });
-
-          // Update order status to failed
-          if (body.metadata.vpsOrderId) {
-            await updateDoc(doc(db, 'orders', body.metadata.vpsOrderId), {
-              paymentStatus: 'failed',
-              error: paymentData.message || 'Payment failed',
-              failedAt: new Date().toISOString()
-            });
-          }
-        }
-      }
-
       return NextResponse.json({
         success: true,
         paymentUrl: paymentData.data.link,
         paymentId: paymentData.data.id,
         type: body.metadata?.type
-      });
-
-    } else if (body.type === 'withdrawal') {
-      // Handle payouts using Flutterwave Transfer
-      const payoutResponse = await fetch(`${FLUTTERWAVE_API_URL}/transfers`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${FLUTTERWAVE_SECRET_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          account_bank: body.bankCode,
-          account_number: body.accountNumber,
-          amount: body.amount,
-          currency: body.currency || 'USD',
-          narration: body.description,
-          reference: body.orderId,
-          meta: body.metadata
-        }),
-      });
-
-      if (!payoutResponse.ok) {
-        const errorData = await payoutResponse.json();
-        throw new Error(errorData.message || 'Failed to process withdrawal');
-      }
-
-      const payoutData = await payoutResponse.json();
-      return NextResponse.json({
-        success: true,
-        transactionId: payoutData.data.id,
-        status: payoutData.data.status
       });
     }
 
@@ -347,16 +166,16 @@ export async function POST(request: Request) {
 }
 
 function getReturnUrl(metadata?: PaymentRequest['metadata']): string {
-  if (!metadata?.type) return '/v6/dashboard';
+  if (!metadata?.type) return `${process.env.NEXT_PUBLIC_APP_URL}/v6/dashboard`;
   
   switch(metadata.type) {
     case 'vps':
-      return '/v6/dashboard/vps';
+      return `${process.env.NEXT_PUBLIC_APP_URL}/v6/vps`;
     case 'algo':
-      return metadata.algoId ? `/market/${metadata.algoId}/download` : '/v6/dashboard';
+      return `${process.env.NEXT_PUBLIC_APP_URL}/market/${metadata.algoId}/download`;
     case 'membership':
-      return '/v6/dashboard';
+      return `${process.env.NEXT_PUBLIC_APP_URL}/v6/account`;
     default:
-      return '/v6/dashboard';
+      return `${process.env.NEXT_PUBLIC_APP_URL}/v6/dashboard`;
   }
 } 

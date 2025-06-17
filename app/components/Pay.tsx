@@ -9,6 +9,8 @@ import { db } from "../functions/firebase";
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { CheckCircle } from 'lucide-react'
 import { PlanKey, PlanConfig, vpsPlanSchema, vpsOrderSchema, ReferralEarning } from '../types/index';
+import { useFlutterwave } from 'flutterwave-react-v3';
+import { useRouter } from 'next/navigation';
 
 interface PayProps {
   plan: PlanKey;
@@ -527,6 +529,7 @@ export default function Pay({ plan }: PayProps): React.ReactElement {
   const [referralCode, setReferralCode] = useState("");
   const [isValidatingCode, setIsValidatingCode] = useState(false);
   const [referrerType, setReferrerType] = useState<"referral" | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const config = planConfig[selectedPlan];
@@ -697,10 +700,10 @@ export default function Pay({ plan }: PayProps): React.ReactElement {
         os,
         backupStorage,
         monitoring,
-        price: basePrice, // Use the same price calculation as shown in Order Summary
+        price: basePrice,
         paymentType: type,
         status: "PendingPayment" as const,
-        purchaseDate: "",
+        purchaseDate: new Date().toISOString(),
         expiryDate: "",
         createdAt: new Date().toISOString(),
         serverCredentials: {
@@ -712,13 +715,15 @@ export default function Pay({ plan }: PayProps): React.ReactElement {
       // Validate VPS plan data
       const validatedPlanData = vpsPlanSchema.parse(vpsPlanData);
 
-      // Prepare order data without id (it will come from validatedPlanData)
+      // Prepare order data
       const orderData = {
         userId: sessionUser.uid,
         userName: userDoc.data()?.name || "User",
+        status: "PendingPayment" as const,
         paymentStatus: "pending" as const,
+        type: "new" as const,
         lastUpdated: new Date().toISOString(),
-        type: "new" as const
+        expiryDate: ""
       };
 
       // Combine and validate order data
@@ -760,45 +765,102 @@ export default function Pay({ plan }: PayProps): React.ReactElement {
       });
 
       if (result.isConfirmed) {
-        // Create payment using unified API
-        const paymentResponse = await fetch('/api/payment', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
+        // Initialize Flutterwave payment
+        const flutterwave = useFlutterwave({
+          public_key: process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY!,
+          tx_ref: orderRef.id,
             amount: basePrice,
-            type: 'payment',
+          currency: "USD",
+          payment_options: "card",
+          customer: {
+            email: sessionUser.email,
+            name: userDoc.data()?.name,
+            phone_number: userDoc.data()?.phone || "+2340000000000"
+          },
+          customizations: {
+            title: "VPS Payment",
             description: `Payment for ${quantity} ${selectedPlan} VPS (${length})`,
-            customerEmail: sessionUser.email,
-            orderId: orderRef.id,
-            metadata: {
+            logo: `${process.env.NEXT_PUBLIC_APP_URL}/logo.png`,
+          },
+          meta: {
               vpsOrderId: orderRef.id,
-              userName: userDoc.data()?.name, // Add user name
               planType: selectedPlan,
               duration: length,
               quantity: quantity,
               region: region
             }
-          }),
         });
 
-        if (!paymentResponse.ok) {
-          const errorData = await paymentResponse.json();
-          throw new Error(errorData.error || 'Failed to create payment');
-        }
+        try {
+          let paymentCompleted = false;
+          
+          flutterwave({
+            callback: async (response) => {
+              console.log('Payment response:', response);
+              paymentCompleted = true;
+              
+              if (response.status === 'successful') {
+                const expiryDate = calculateExpiryDate(length);
+                
+                // Update order status
+                await updateDoc(doc(db, "orders", orderRef.id), {
+                  status: 'Running',
+                  paymentStatus: 'completed',
+                  paymentId: response.transaction_id,
+                  paidAt: new Date().toISOString(),
+                  expiryDate: expiryDate
+                });
 
-        const { paymentUrl, paymentId } = await paymentResponse.json();
-        if (!paymentUrl) {
-          throw new Error('Invalid payment URL received');
-        }
+                // Update user's VPS plans
+                const userRef = doc(db, "users", sessionUser.uid);
+                const userDoc = await getDoc(userRef);
+                const currentVpsPlans = userDoc.data()?.vpsPlans || [];
+                
+                // Find and update the specific VPS plan
+                const updatedVpsPlans = currentVpsPlans.map((plan: any) => {
+                  if (plan.id === planId) {
+                    return {
+                      ...plan,
+                      status: 'Running',
+                      expiryDate: expiryDate
+                    };
+                  }
+                  return plan;
+                });
 
-        // Store payment ID in the order
+                await updateDoc(userRef, {
+                  vpsPlans: updatedVpsPlans
+                });
+
+                // Handle referral commission if applicable
+                if (referralCode) {
+                  await handleReferralCommission(orderRef.id, basePrice);
+                }
+
+                // Redirect to success page
+                router.push(`/v6/payment/success?order_id=${orderRef.id}&transaction_id=${response.transaction_id}`);
+              } else {
+                // Handle failed payment
         await updateDoc(doc(db, "orders", orderRef.id), {
-          paymentId: paymentId
-        });
-
-        window.location.href = paymentUrl;
+                  status: 'Failed',
+                  paymentStatus: 'failed',
+                  failedAt: new Date().toISOString(),
+                  failureReason: 'Payment was not successful'
+                });
+                router.push(`/v6/payment/cancel?order_id=${orderRef.id}`);
+              }
+            },
+            onClose: () => {
+              // Only redirect to cancel page if payment wasn't completed
+              if (!paymentCompleted) {
+                router.push(`/v6/payment/cancel?order_id=${orderRef.id}`);
+              }
+            },
+          });
+        } catch (error) {
+          console.error('Payment initialization error:', error);
+          toast.error('Failed to initialize payment. Please try again.');
+        }
       } else {
         toast.warning('Payment cancelled. Your order is saved but pending payment.');
       }
@@ -1320,4 +1382,25 @@ export default function Pay({ plan }: PayProps): React.ReactElement {
       </div>
     </div>
   );
+}
+
+function calculateExpiryDate(length: string): string {
+  const now = new Date();
+  switch (length) {
+    case "1 Month":
+      now.setMonth(now.getMonth() + 1);
+      break;
+    case "3 Months":
+      now.setMonth(now.getMonth() + 3);
+      break;
+    case "6 Months":
+      now.setMonth(now.getMonth() + 6);
+      break;
+    case "1 Year":
+      now.setFullYear(now.getFullYear() + 1);
+      break;
+    default:
+      now.setMonth(now.getMonth() + 1);
+  }
+  return now.toISOString();
 }

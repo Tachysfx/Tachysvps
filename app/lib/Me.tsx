@@ -131,7 +131,6 @@ const Deep = ({ enrichedAlgo, params }: DeepProps) => {
             monthlyProfit: 0
           }
         });
-        console.log("Current User:", user);
       } else {
         setCurrentUser(null);
         console.log("No User");

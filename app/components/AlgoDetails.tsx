@@ -11,6 +11,9 @@ import CardSideBar from "./SideBar";
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'react-toastify';
 import AlgoStructuredData from './AlgoStructuredData';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../functions/firebase';
+import { useFlutterwave } from 'flutterwave-react-v3';
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -52,6 +55,8 @@ export default function AlgoDetails({ enrichedAlgo, enrichedAlgos, id }: AlgoDet
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [markdownContent, setMarkdownContent] = useState<string>('');
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [hasAlgo, setHasAlgo] = useState(false);
   
   const openAuthModal = () => setIsAuthModalOpen(true);
   const download = `/market/${id}/download`;
@@ -60,7 +65,20 @@ export default function AlgoDetails({ enrichedAlgo, enrichedAlgos, id }: AlgoDet
   useEffect(() => {
     const userSession = sessionStorage.getItem('user');
     setIsLoggedIn(!!userSession);
-  }, []);
+
+    // Check if user has the algo in their downloads
+    const checkUserDownloads = async () => {
+      if (userSession) {
+        const user = JSON.parse(userSession);
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        const userData = userDoc.data();
+        const downloads = userData?.downloads || [];
+        setHasAlgo(downloads.includes(id));
+      }
+    };
+
+    checkUserDownloads();
+  }, [id]);
 
   useEffect(() => {
     const fetchMarkdownContent = async () => {
@@ -103,11 +121,6 @@ export default function AlgoDetails({ enrichedAlgo, enrichedAlgos, id }: AlgoDet
   };
 
   const handlePurchase = async () => {
-    if (!isLoggedIn) {
-      openAuthModal();
-      return;
-    }
-
     try {
       const userSession = sessionStorage.getItem('user');
       if (!userSession) {
@@ -116,33 +129,51 @@ export default function AlgoDetails({ enrichedAlgo, enrichedAlgos, id }: AlgoDet
       }
 
       const userData = JSON.parse(userSession);
-      const response = await fetch('/api/payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const orderId = crypto.randomUUID();
+
+      const config = {
+        public_key: process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY!,
+        tx_ref: orderId,
+        amount: enrichedAlgo.buy_price,
+        currency: "USD",
+        payment_options: "card",
+        customer: {
+          email: userData.email,
+          name: userData.displayName || userData.email,
+          phone_number: userData.phone || "+2340000000000",
         },
-        body: JSON.stringify({
-          amount: enrichedAlgo.buy_price,
-          type: 'payment',
+        customizations: {
+          title: "Algorithm Purchase",
           description: `Purchase of ${enrichedAlgo.name} algorithm`,
-          customerEmail: userData.email,
-          metadata: {
+          logo: `${process.env.NEXT_PUBLIC_APP_URL}/logo.png`,
+        },
+        meta: {
+            type: 'algo',
             algoId: id,
             sellerId: enrichedAlgo.sellerId,
-            algoName: enrichedAlgo.name
+            algoName: enrichedAlgo.name,
+          userId: userData.uid,
+            userName: userData.displayName || userData.email,
+          returnUrl: `/market/${id}/download`,
+          paid: true,
+          downloadUrl: `/market/${id}/download`
+        }
+      };
+
+      const handleFlutterPayment = useFlutterwave(config);
+      await handleFlutterPayment({
+        callback: async (response) => {
+          if (response.status === 'successful') {
+            window.location.href = `/market/${id}/download?status=successful&tx_ref=${orderId}&transaction_id=${response.transaction_id}`;
           }
-        }),
+        },
+        onClose: () => {
+          toast.info('Payment cancelled');
+        },
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to create payment');
-      }
-
-      const { paymentUrl } = await response.json();
-      window.location.href = paymentUrl;
     } catch (error) {
       console.error('Payment error:', error);
-      toast.error('Failed to process payment. Please try again.');
+      toast.error(error instanceof Error ? error.message : 'Failed to process payment. Please try again.');
     }
   };
 
@@ -151,10 +182,14 @@ export default function AlgoDetails({ enrichedAlgo, enrichedAlgos, id }: AlgoDet
       return <UnauthorizedMessage openAuthModal={openAuthModal} />;
     }
 
-    if (enrichedAlgo.cost === "Premium" && !enrichedAlgo.paid) {
+    if (enrichedAlgo.cost === "Premium" && !hasAlgo) {
       return (
-        <button onClick={handlePurchase} className="btn btn-purple">
-          Buy for ${enrichedAlgo.buy_price}
+        <button 
+          onClick={handlePurchase} 
+          className="btn btn-purple"
+          disabled={isProcessingPayment}
+        >
+          {isProcessingPayment ? 'Processing...' : `Buy for $${enrichedAlgo.buy_price}`}
         </button>
       );
     }
@@ -167,7 +202,7 @@ export default function AlgoDetails({ enrichedAlgo, enrichedAlgos, id }: AlgoDet
   };
 
   return (
-    <div className="container-fluid py-5">
+    <div className="container-fluid py-2">
       {/* Add structured data for SEO */}
       <AlgoStructuredData
         name={enrichedAlgo.name}
@@ -175,6 +210,7 @@ export default function AlgoDetails({ enrichedAlgo, enrichedAlgos, id }: AlgoDet
         image={enrichedAlgo.image || '/default-algo-image.png'}
         datePublished={enrichedAlgo.createdAt || new Date().toISOString()}
         sellerName={enrichedAlgo.sellerName}
+        sellerId={enrichedAlgo.sellerId}
         price={enrichedAlgo.price}
         currency="USD"
         rating={enrichedAlgo.rating || 4.5}
@@ -258,7 +294,7 @@ export default function AlgoDetails({ enrichedAlgo, enrichedAlgos, id }: AlgoDet
             <div className="modal-footer py-1">
               <button type="button" className="btn btn-sm btn-outline-purple" data-bs-dismiss="modal">Close</button>
               {isLoggedIn ? (
-                enrichedAlgo.cost === "Premium" && !enrichedAlgo.paid ? (
+                enrichedAlgo.cost === "Premium" && !hasAlgo ? (
                   <button onClick={handlePurchase} className="btn btn-sm btn-purple">
                     Buy for ${enrichedAlgo.buy_price}
                   </button>
@@ -299,7 +335,7 @@ export default function AlgoDetails({ enrichedAlgo, enrichedAlgos, id }: AlgoDet
                   <StarRating rating={enrichedAlgo.rating} />
                 </div>
                 {isLoggedIn ? (
-                  enrichedAlgo.cost === "Premium" && !enrichedAlgo.paid ? (
+                  enrichedAlgo.cost === "Premium" && !hasAlgo ? (
                     <button onClick={handlePurchase} className="btn btn-sm btn-purple mb-2">
                       Buy for ${enrichedAlgo.buy_price}
                     </button>

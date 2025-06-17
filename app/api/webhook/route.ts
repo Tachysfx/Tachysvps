@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../../functions/firebase';
 import crypto from 'crypto';
 
 const WEBHOOK_SECRET = process.env.FLUTTERWAVE_WEBHOOK_SECRET;
+const MAX_RETRIES = 3;
+const INITIAL_DELAY = 1000;
 
 // Verify webhook signature for Flutterwave
 function verifyFlutterwaveSignature(payload: string, signature: string): boolean {
@@ -15,6 +17,17 @@ function verifyFlutterwaveSignature(payload: string, signature: string): boolean
     .digest('hex');
     
   return hash === signature;
+}
+
+// Retry function with exponential backoff
+async function retryWithBackoff(fn: () => Promise<any>, retries = MAX_RETRIES): Promise<any> {
+  try {
+    return await fn();
+  } catch (error) {
+    if (retries === 0) throw error;
+    await new Promise(resolve => setTimeout(resolve, INITIAL_DELAY * (MAX_RETRIES - retries)));
+    return retryWithBackoff(fn, retries - 1);
+  }
 }
 
 export async function POST(request: Request) {
@@ -33,54 +46,40 @@ export async function POST(request: Request) {
 
     // Handle different Flutterwave event types
     switch (event.event) {
-      case 'charge.completed': {
-        const { tx_ref, id, amount } = event.data;
-        
-        // Get order from Firestore
-        const orderRef = doc(db, 'orders', tx_ref);
-        const orderDoc = await getDoc(orderRef);
-        
-        if (!orderDoc.exists()) {
-          return NextResponse.json(
-            { error: 'Order not found' },
-            { status: 404 }
-          );
-        }
 
-        const orderData = orderDoc.data();
-
-        // For algo purchases, calculate seller earnings (85% of payment)
-        if (orderData.type === 'algo') {
-          const sellerAmount = amount * 0.85; // 85% commission to seller
-          const sellerRef = doc(db, 'sellers', orderData.sellerId);
-          const sellerDoc = await getDoc(sellerRef);
-          
-          // Update seller's pending earnings
-          await updateDoc(sellerRef, {
-            pendingEarnings: (sellerDoc.data()?.pendingEarnings || 0) + sellerAmount,
-            activities2: [{
-              title: "Sale Completed",
-              description: `Received payment for algorithm: ${orderData.algoName}`,
-              timestamp: new Date().toISOString()
-            }, ...(sellerDoc.data()?.activities2 || [])].slice(0, 5)
+      case 'transfer.completed': {
+        const { reference, id, amount } = event.data;
+        
+        // Handle successful transfers (e.g., seller payouts)
+        const transferRef = doc(db, 'transfers', reference);
+        await retryWithBackoff(async () => {
+          await updateDoc(transferRef, {
+            status: 'completed',
+            completedAt: new Date().toISOString(),
+            flutterwaveTransferId: id
           });
-        }
-
-        // Update order status
-        await updateDoc(orderRef, {
-          paymentStatus: 'completed',
-          lastUpdated: new Date().toISOString(),
-          paymentDetails: {
-            provider: 'flutterwave',
-            paymentId: id,
-            amount: amount,
-            paidAt: new Date().toISOString()
-          }
         });
         break;
       }
 
-      // ... handle other Flutterwave events as needed ...
+      case 'charge.failed': {
+        const { tx_ref, id } = event.data;
+        
+        // Update order status for failed payments
+        const orderRef = doc(db, 'orders', tx_ref);
+        await retryWithBackoff(async () => {
+          await updateDoc(orderRef, {
+            paymentStatus: 'failed',
+            lastUpdated: new Date().toISOString(),
+            paymentDetails: {
+              provider: 'flutterwave',
+              paymentId: id,
+              failedAt: new Date().toISOString()
+            }
+          });
+        });
+        break;
+      }
     }
 
     return NextResponse.json({ received: true });

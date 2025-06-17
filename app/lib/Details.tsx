@@ -23,9 +23,15 @@ export interface Seller {
 }
 
 
-export interface EnrichedAlgo extends Algo {
+export interface EnrichedAlgo extends Omit<Algo, 'cost'> {
+  cost: string;
+  price: number;
   sellerName: string;
   sellerLocation: string;
+  id: string;
+  name: string;
+  description: string;
+  sellerId: string;
 }
 
 // Fetch a generic entity
@@ -108,6 +114,7 @@ export async function fetchEnrichedAlgo(algoId: string): Promise<EnrichedAlgo> {
       sellerLocation: seller?.location || "N/A",
       rating: algo.rating,
       ratingCount: algo.ratingCount,
+      price: algo.cost === "Premium" ? 99 : 0,
       // comments: enrichedComments,
       // reviews: enrichedReviews,
     };

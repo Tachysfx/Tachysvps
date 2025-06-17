@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { toast } from "react-toastify";
 import type { EnrichedAlgo } from '../../../lib/Details';
@@ -9,8 +8,8 @@ import { doc, updateDoc, arrayUnion, increment, getDoc } from "firebase/firestor
 import { useState, useEffect } from 'react';
 import { Download, ShoppingBag, Cpu, Server, Globe2, ArrowRight, Timer } from 'lucide-react';
 import PremiumMembershipModal from '../../../components/PremiumMembershipModal';
+import { useSearchParams, useRouter } from 'next/navigation';
 
-const downloads = '/downloads.png';
 
 type DownloadComponentProps = {
   algo: EnrichedAlgo;
@@ -26,19 +25,15 @@ const CountdownComponent = ({ onComplete }: { onComplete: () => void }) => {
     let dotInterval: NodeJS.Timeout;
     let timer: NodeJS.Timeout;
 
-    // Only start the intervals if not complete
     if (!isComplete) {
-      // Animate loading dots
       dotInterval = setInterval(() => {
         setDots(prev => prev.length >= 3 ? '' : prev + '.');
       }, 500);
 
-      // Countdown timer
       timer = setInterval(() => {
         setCount(prev => {
           const newCount = prev - 1;
           if (newCount <= 0) {
-            // Mark as complete
             setIsComplete(true);
             return 0;
           }
@@ -47,16 +42,13 @@ const CountdownComponent = ({ onComplete }: { onComplete: () => void }) => {
       }, 1000);
     }
 
-    // When complete, trigger the callback
     if (isComplete) {
-      // Small delay to ensure smooth transition
       const completeTimer = setTimeout(() => {
         onComplete();
       }, 100);
       return () => clearTimeout(completeTimer);
     }
 
-    // Cleanup intervals
     return () => {
       clearInterval(dotInterval);
       clearInterval(timer);
@@ -67,10 +59,7 @@ const CountdownComponent = ({ onComplete }: { onComplete: () => void }) => {
     <div className="min-h-[300px] flex items-center justify-center">
       <div className="text-center space-y-6">
         <div className="relative w-32 h-32 mx-auto">
-          {/* Outer rotating circle */}
           <div className="absolute inset-0 rounded-full border-4 border-purple-200 border-dashed animate-spin-slow"></div>
-          
-          {/* Inner circle with countdown */}
           <div className="absolute inset-2 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center">
             <span className="text-4xl font-bold text-white">{count}</span>
           </div>
@@ -85,7 +74,6 @@ const CountdownComponent = ({ onComplete }: { onComplete: () => void }) => {
           </p>
         </div>
 
-        {/* Progress bar */}
         <div className="w-64 h-2 bg-gray-200 rounded-full mx-auto overflow-hidden">
           <div 
             className="h-full bg-gradient-to-r from-purple-600 to-blue-600 transition-all duration-1000 ease-linear"
@@ -100,19 +88,89 @@ const CountdownComponent = ({ onComplete }: { onComplete: () => void }) => {
 export default function DownloadComponent({ algo, id }: DownloadComponentProps) {
   const [showDownload, setShowDownload] = useState(false);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // Function to handle payment verification and URL cleanup
+  const handlePaymentVerification = async () => {
+    try {
+      const status = searchParams.get('status');
+      const txRef = searchParams.get('tx_ref');
+      const transactionId = searchParams.get('transaction_id');
+
+      console.log('Payment verification:', { status, txRef, transactionId });
+
+      if (status === 'successful' && txRef && transactionId) {
+        // Get user from session storage
+        const userSession = sessionStorage.getItem('user');
+        if (!userSession) {
+          toast.error('Please login to download');
+          return;
+        }
+
+        const user = JSON.parse(userSession);
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (!userDoc.exists()) {
+          toast.error('User data not found');
+          return;
+        }
+
+        // Update user's downloads array
+        await updateDoc(userDocRef, {
+          downloads: arrayUnion(id)
+        });
+
+        // Update seller's data section
+        const sellerAmount = parseFloat((algo.price * 0.85).toFixed(2)); // 85% commission to seller with 2 decimal places
+        const sellerRef = doc(db, 'sellers', algo.sellerId);
+        const sellerDoc = await getDoc(sellerRef);
+        
+        if (sellerDoc.exists()) {
+          const currentPendingEarnings = sellerDoc.data()?.pendingEarnings || 0;
+          const newPendingEarnings = parseFloat((currentPendingEarnings + sellerAmount).toFixed(2));
+          
+          await updateDoc(sellerRef, {
+            pendingEarnings: newPendingEarnings,
+            activities2: [{
+              title: "Sale Completed",
+              description: `Received payment for algorithm: ${algo.name}`,
+              timestamp: new Date().toISOString()
+            }, ...(sellerDoc.data()?.activities2 || [])].slice(0, 5)
+          });
+          console.log('Successfully updated seller data');
+        } else {
+          console.error('Seller document not found:', algo.sellerId);
+        }
+
+        // Clean URL by removing query parameters
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, '', cleanUrl);
+      }
+    } catch (error) {
+      console.error('Payment verification error:', error);
+      toast.error('Failed to verify payment');
+    }
+  };
+
+  // Call handlePaymentVerification when component mounts
+  useEffect(() => {
+    handlePaymentVerification();
+  }, []);
 
   const handleDownload = async () => {
     try {
       // Get current user from session storage
-      const userStr = sessionStorage.getItem('user');
-      if (!userStr) {
+      const userSession = sessionStorage.getItem('user');
+      if (!userSession) {
         toast.error('Please login to download');
         return;
       }
 
-      const user = JSON.parse(userStr);
+      const user = JSON.parse(userSession);
 
-      // Check if user has already downloaded this algo
+      // Get user's downloads from Firestore
       const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
       
@@ -130,19 +188,14 @@ export default function DownloadComponent({ algo, id }: DownloadComponentProps) 
         return;
       }
 
-      // Verify payment status for premium algos
-      if (algo.cost === "Premium") {
-        const algoRef = doc(db, 'algos', id);
-        const algoDoc = await getDoc(algoRef);
-        
-        if (!algoDoc.exists() || !algoDoc.data().paid) {
-          toast.error('Please purchase this algorithm before downloading');
-          window.location.href = `/market/${id}`;
-          return;
-        }
+      // For premium algos, verify it's in user's downloads
+      if (algo.cost === "Premium" && !downloads.includes(id)) {
+        toast.error('Please purchase this algorithm before downloading');
+        window.location.href = `/market/${id}`;
+        return;
       }
 
-      // Start download directly using algo.app.url
+      // Start download
       const link = document.createElement('a');
       link.href = algo.app.url;
       link.download = algo.name;
@@ -150,20 +203,15 @@ export default function DownloadComponent({ algo, id }: DownloadComponentProps) 
       link.click();
       link.remove();
 
-      // If user hasn't downloaded this algo before, update counts and send email
+      // If this is first download, update counts and send email
       if (!downloads.includes(id)) {
-        // Update user's downloads array
-        await updateDoc(userDocRef, {
-          downloads: arrayUnion(id)
-        });
-
         // Increment algo's download count
         const algoDocRef = doc(db, 'algos', id);
         await updateDoc(algoDocRef, {
           downloads: increment(1)
         });
 
-        // Send congratulatory email with review link
+        // Send congratulatory email
         await fetch('/api/contact', {
           method: 'POST',
           headers: {
@@ -191,7 +239,6 @@ export default function DownloadComponent({ algo, id }: DownloadComponentProps) 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 py-6 md:py-12 px-4">
       <div className="max-w-7xl mx-auto space-y-6 md:space-y-12 mb-4">
-        {/* Conditional rendering of countdown or download section */}
         <div className="bg-white rounded-xl md:rounded-2xl shadow-lg md:shadow-xl overflow-hidden">
           {!showDownload ? (
             <CountdownComponent onComplete={() => setShowDownload(true)} />
